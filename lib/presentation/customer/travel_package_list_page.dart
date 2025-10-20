@@ -53,7 +53,7 @@ class _PackagesPageState extends State<PackagesPage> {
       children: [
         // Search Bar
         Container(
-          padding: const EdgeInsets.all(10),
+          padding: const EdgeInsets.fromLTRB(20, 0, 18, 8),
           color: Colors.blue.shade900,
           child: TextField(
             decoration: InputDecoration(
@@ -62,7 +62,7 @@ class _PackagesPageState extends State<PackagesPage> {
               filled: true,
               fillColor: Colors.white,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(20),
                 borderSide: BorderSide.none,
               ),
             ),
@@ -99,7 +99,7 @@ class _PackagesPageState extends State<PackagesPage> {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 3,
-      shadowColor: Colors.blue.shade900.withOpacity(0.1),
+      shadowColor: Colors.black.withOpacity(0.1),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
         decoration: BoxDecoration(
@@ -107,7 +107,7 @@ class _PackagesPageState extends State<PackagesPage> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Colors.white, Colors.blue.shade50.withOpacity(0.3)],
+            colors: [Colors.white, Colors.blue.shade200.withOpacity(0.3)],
           ),
         ),
         child: Column(
@@ -127,7 +127,7 @@ class _PackagesPageState extends State<PackagesPage> {
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [Colors.blue.shade700, Colors.blue.shade900],
+                      colors: [Colors.blue.shade500, Colors.blue.shade900],
                     ),
                   ),
                   child:

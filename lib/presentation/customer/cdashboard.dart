@@ -29,6 +29,8 @@ class _CDashboardPageState extends State<CDashboardPage> {
       appBar: AppBar(
         title: const Text('IPLANUGO'),
         backgroundColor: Colors.blue.shade900,
+
+        // foregroundColor: Colors.blue.shade900,
         foregroundColor: Colors.white,
         actions: [
           IconButton(
@@ -75,13 +77,13 @@ class _CDashboardPageState extends State<CDashboardPage> {
       extendBody: true,
       body: _pages[_selectedIndex],
       bottomNavigationBar: Container(
-        margin: const EdgeInsets.all(16),
+        margin: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           color: Colors.white.withOpacity(0.9),
           borderRadius: BorderRadius.circular(30),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.15),
+              color: Colors.black.withOpacity(0.4),
               blurRadius: 20,
               offset: const Offset(0, 5),
             ),
@@ -92,11 +94,12 @@ class _CDashboardPageState extends State<CDashboardPage> {
           child: BottomNavigationBar(
             currentIndex: _selectedIndex,
             onTap: (index) => setState(() => _selectedIndex = index),
-            backgroundColor: Colors.blue.shade900,
+            // backgroundColor: Colors.transparent,
+            backgroundColor: Colors.blue.shade50,
             elevation: 0,
-            selectedItemColor: Colors.white,
+            selectedItemColor: Colors.blue.shade900,
             selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
-            unselectedItemColor: Colors.grey,
+            unselectedItemColor: Colors.blue.shade300,
             type: BottomNavigationBarType.fixed,
             items: const [
               BottomNavigationBarItem(

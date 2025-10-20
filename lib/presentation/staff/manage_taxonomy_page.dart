@@ -5,6 +5,32 @@ class ManageTaxonomyPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Staff Brand Color
+    const staffColor = Colors.teal;
+
+    // List of Taxonomy Items for easier iteration and styling
+    final List<Map<String, dynamic>> taxonomies = [
+      {
+        'type': 'tags',
+        'title': 'Manage Tags',
+        'icon': Icons.label_important_outline,
+        'color': Colors.blueGrey,
+      },
+      {
+        'type': 'activityTypes',
+        'title': 'Manage Activity Types',
+        'icon': Icons.directions_run_outlined,
+        'color': Colors.indigo,
+      },
+      {
+        'type': 'foodTypes',
+        'title': 'Manage Food Types',
+        'icon': Icons.restaurant_menu_outlined,
+        'color': Colors.orange,
+      },
+      // You can add more here easily
+    ];
+
     void navigateToTaxonomy(String taxonomyType) {
       Navigator.pushNamed(
         context,
@@ -15,53 +41,119 @@ class ManageTaxonomyPage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Manage Taxonomy"),
-        backgroundColor: Colors.pink,
+        title: Text(
+          "Taxonomy Management",
+          style: TextStyle(color: Colors.white),
+        ),
+        backgroundColor: staffColor,
+        elevation: 0, // Removes the shadow
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Text(
-              "Select Taxonomy to Manage",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 32),
-
-            ElevatedButton.icon(
-              onPressed: () => navigateToTaxonomy('tags'),
-              icon: const Icon(Icons.label),
-              label: const Text("Manage Tags"),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.pinkAccent,
-                padding: const EdgeInsets.symmetric(vertical: 16),
+      body: Container(
+        // Subtle gradient background for a management dashboard feel
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [staffColor.shade50, Colors.white],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                "Categorization Hub",
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w800,
+                  color: staffColor,
+                ),
+                textAlign: TextAlign.center,
               ),
-            ),
-            const SizedBox(height: 16),
-
-            ElevatedButton.icon(
-              onPressed: () => navigateToTaxonomy('activityTypes'),
-              icon: const Icon(Icons.local_activity),
-              label: const Text("Manage Activity Types"),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepPurpleAccent,
-                padding: const EdgeInsets.symmetric(vertical: 16),
+              const SizedBox(height: 8),
+              const Text(
+                "Select a category to view, create, or edit its terms.",
+                style: TextStyle(fontSize: 16, color: Colors.black54),
+                textAlign: TextAlign.center,
               ),
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 40),
 
-            ElevatedButton.icon(
-              onPressed: () => navigateToTaxonomy('foodTypes'),
-              icon: const Icon(Icons.fastfood),
-              label: const Text("Manage Food Types"),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orangeAccent,
-                padding: const EdgeInsets.symmetric(vertical: 16),
+              // Use ListView.builder or map for dynamic creation
+              ...taxonomies.map((item) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 20),
+                  child: _TaxonomyCard(
+                    title: item['title'],
+                    icon: item['icon'],
+                    color: item['color'],
+                    onTap: () => navigateToTaxonomy(item['type']),
+                  ),
+                );
+              }).toList(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---
+// Custom Widget for a cleaner UI
+// ---
+
+class _TaxonomyCard extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _TaxonomyCard({
+    required this.title,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 6,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, size: 32, color: color),
               ),
-            ),
-          ],
+              const SizedBox(width: 20),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade800,
+                  ),
+                ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios,
+                size: 18,
+                color: Colors.grey.shade400,
+              ),
+            ],
+          ),
         ),
       ),
     );
