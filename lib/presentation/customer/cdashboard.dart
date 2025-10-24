@@ -3,9 +3,22 @@ import 'package:travel2u_v1/core/services/auth_service.dart';
 import 'package:travel2u_v1/presentation/customer/booking_list_page.dart';
 import 'package:travel2u_v1/presentation/customer/itinerary_list_page.dart';
 import 'package:travel2u_v1/presentation/customer/travel_package_list_page.dart';
+import 'package:travel2u_v1/presentation/widgets/custom_message_popup.dart';
+import 'package:travel2u_v1/presentation/widgets/profile_page.dart';
 
 class CDashboardPage extends StatefulWidget {
-  const CDashboardPage({super.key});
+  final String? userId;
+  final String? name;
+  final String? email;
+  final String? role;
+  // const CDashboardPage({super.key});
+  const CDashboardPage({
+    super.key,
+    this.userId,
+    this.name,
+    this.email,
+    this.role,
+  });
 
   @override
   State<CDashboardPage> createState() => _CDashboardPageState();
@@ -24,6 +37,22 @@ class _CDashboardPageState extends State<CDashboardPage> {
   bool isLoading = true;
 
   @override
+  void initState() {
+    super.initState();
+
+    // Run after the first frame is rendered
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      MessagePopup.show(
+        context,
+        message: "Hi ${widget.name ?? 'Customer'}",
+        type: MessageType.success,
+        position: PopupPosition.top,
+        title: 'Welcome',
+      );
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -33,6 +62,15 @@ class _CDashboardPageState extends State<CDashboardPage> {
         // foregroundColor: Colors.blue.shade900,
         foregroundColor: Colors.white,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.person_outline_rounded),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => ProfilePage()),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {

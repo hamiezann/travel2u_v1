@@ -1,4 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 
 // Assuming you have a TravelPackage model, but for this example,
@@ -27,10 +29,14 @@ class _ManageTravelPageState extends State<ManageTravelPage> {
 
   // Reload data function (used for initial load and after deletion)
   Future<void> _fetchTravelPackages() async {
+    final user = FirebaseAuth.instance.currentUser;
     travelPackages.clear();
     try {
       QuerySnapshot querySnapshot =
-          await _firestore.collection('travel_packages').get();
+          await _firestore
+              .collection('travel_packages')
+              .where('creatorId', isEqualTo: user?.uid)
+              .get();
       setState(() {
         for (var doc in querySnapshot.docs) {
           travelPackages[doc.id] = doc.data();
@@ -79,6 +85,16 @@ class _ManageTravelPageState extends State<ManageTravelPage> {
     if (confirmDelete == true) {
       try {
         // Delete from Firestore
+        final package = travelPackages[key];
+        final imageUrl = package['imageUrl'];
+        if (imageUrl != null && imageUrl.isNotEmpty) {
+          try {
+            final ref = FirebaseStorage.instance.refFromURL(imageUrl);
+            await ref.delete();
+          } catch (e) {
+            debugPrint('⚠️ Error deleting image: $e');
+          }
+        }
         await _firestore.collection('travel_packages').doc(key).delete();
         setState(() {
           travelPackages.remove(key);

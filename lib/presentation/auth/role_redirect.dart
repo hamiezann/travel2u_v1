@@ -15,16 +15,32 @@ class RoleRedirect extends StatelessWidget {
       future:
           FirebaseFirestore.instance.collection('users').doc(user!.uid).get(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
-        var data = snapshot.data!;
-        var role = data['role'];
 
-        if (role == 'staff') {
-          return const SDashboardPage();
+        if (!snapshot.hasData || !snapshot.data!.exists) {
+          return const Center(child: Text('User data not found.'));
+        }
+        final data = snapshot.data!.data() as Map<String, dynamic>;
+        final role = data['role'];
+        final name = data['userName'];
+        final email = data['email'];
+
+        if (role == 'staff' || role == 'manager') {
+          return SDashboardPage(
+            userId: user.uid,
+            name: name,
+            email: email,
+            role: role,
+          );
         } else {
-          return CDashboardPage();
+          return CDashboardPage(
+            userId: user.uid,
+            name: name,
+            email: email,
+            role: role,
+          );
         }
       },
     );

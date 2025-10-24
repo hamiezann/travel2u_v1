@@ -249,6 +249,7 @@ class _CreateOrEditTravelPackagePageState
       final travelCollection = FirebaseFirestore.instance.collection(
         'travel_packages',
       );
+      final user = FirebaseAuth.instance.currentUser;
 
       // if new package, generate ID
       if (!isEditMode && _travelPackage.id.isEmpty) {
@@ -269,6 +270,7 @@ class _CreateOrEditTravelPackagePageState
         'price': _travelPackage.price,
         'imageUrl': _travelPackage.imageUrl,
         'tags': _travelPackage.tags,
+        'creatorId': user?.uid,
         'activityPool':
             _travelPackage.activityPool.map((a) => a.toJson()).toList(),
         if (isEditMode)
@@ -292,7 +294,7 @@ class _CreateOrEditTravelPackagePageState
           ),
         );
       } catch (e) {
-        debugPrint('Error saving travel package: $e');
+        // debugPrint('Error saving travel package: $e');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Failed to save travel package')),
         );

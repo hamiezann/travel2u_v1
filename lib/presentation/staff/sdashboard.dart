@@ -3,21 +3,52 @@ import 'package:travel2u_v1/core/services/auth_service.dart';
 import 'package:travel2u_v1/presentation/staff/manage_activity_page.dart';
 import 'package:travel2u_v1/presentation/staff/manage_taxonomy_page.dart';
 import 'package:travel2u_v1/presentation/staff/manage_travel_page.dart';
+import 'package:travel2u_v1/presentation/widgets/custom_message_popup.dart';
+import 'package:travel2u_v1/presentation/widgets/profile_page.dart';
 
 class SDashboardPage extends StatelessWidget {
-  const SDashboardPage({super.key});
+  final String? userId;
+  final String? email;
+  final String? name;
+  final String? role;
+  const SDashboardPage({
+    super.key,
+    this.userId,
+    this.name,
+    this.email,
+    this.role,
+  });
 
   @override
   Widget build(BuildContext context) {
     final authService = AuthService();
-
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      MessagePopup.show(
+        context,
+        message: "Hi ${name ?? (role == 'staff' ? 'Staff' : 'Admin')}",
+        type: MessageType.success,
+        position: PopupPosition.top,
+        title: 'Welcome',
+      );
+    });
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Staff Dashboard'),
+        title: Text(role == 'staff' ? 'Staff Dashboard' : 'Admin Dashboard'),
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
+          if (role == "staff") ...[
+            IconButton(
+              icon: const Icon(Icons.person_outline_rounded),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => ProfilePage()),
+                );
+              },
+            ),
+          ],
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {
@@ -56,14 +87,6 @@ class SDashboardPage extends StatelessWidget {
                       ],
                     ),
               );
-              // await authService.logout();
-              // if (context.mounted) {
-              //   Navigator.pushNamedAndRemoveUntil(
-              //     context,
-              //     '/login',
-              //     (route) => false,
-              //   );
-              // }
             },
           ),
         ],
@@ -73,7 +96,7 @@ class SDashboardPage extends StatelessWidget {
         child: SafeArea(
           child: Column(
             children: [
-              // Header Section
+              // Header Sectio
               Padding(
                 padding: const EdgeInsets.all(24),
                 child: Column(
@@ -183,7 +206,25 @@ class SDashboardPage extends StatelessWidget {
                             );
                           },
                         ),
-
+                        const SizedBox(height: 16),
+                        _buildMenuCard(
+                          context: context,
+                          icon: Icons.people_alt_outlined,
+                          title:
+                              role == 'staff'
+                                  ? 'Manage Customer'
+                                  : 'Manage Staff & Customer',
+                          description: 'Manage system user',
+                          color: Colors.yellow,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const ManageActivityPage(),
+                              ),
+                            );
+                          },
+                        ),
                         const SizedBox(height: 16),
                         _buildMenuCard(
                           context: context,
