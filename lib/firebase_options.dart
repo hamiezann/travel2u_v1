@@ -40,49 +40,5 @@ class DefaultFirebaseOptions {
     }
   }
 
-  static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyB41pB7CnBhB_amwWjOl_JNQPoP8rkK4Ec',
-    appId: '1:547233529375:web:1c9cb2c86479f852e05f2a',
-    messagingSenderId: '547233529375',
-    projectId: 'travel2u-856f2',
-    authDomain: 'travel2u-856f2.firebaseapp.com',
-    storageBucket: 'travel2u-856f2.firebasestorage.app',
-    measurementId: 'G-BP7RN4JKMK',
-  );
-
-  static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyC5Ub0-m2b3M7Nb3rFxKZ3AeZgTr9gEIl4',
-    appId: '1:547233529375:android:6be8aef2a4c7c15de05f2a',
-    messagingSenderId: '547233529375',
-    projectId: 'travel2u-856f2',
-    storageBucket: 'travel2u-856f2.firebasestorage.app',
-  );
-
-  static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyB60BYGRJaMHk095pxOCm_SFLGxhH_oLLw',
-    appId: '1:547233529375:ios:1dee416f4ff66f37e05f2a',
-    messagingSenderId: '547233529375',
-    projectId: 'travel2u-856f2',
-    storageBucket: 'travel2u-856f2.firebasestorage.app',
-    iosBundleId: 'com.example.travel2uV1',
-  );
-
-  static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyB60BYGRJaMHk095pxOCm_SFLGxhH_oLLw',
-    appId: '1:547233529375:ios:1dee416f4ff66f37e05f2a',
-    messagingSenderId: '547233529375',
-    projectId: 'travel2u-856f2',
-    storageBucket: 'travel2u-856f2.firebasestorage.app',
-    iosBundleId: 'com.example.travel2uV1',
-  );
-
-  static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyB41pB7CnBhB_amwWjOl_JNQPoP8rkK4Ec',
-    appId: '1:547233529375:web:c1e00247035ecd7ae05f2a',
-    messagingSenderId: '547233529375',
-    projectId: 'travel2u-856f2',
-    authDomain: 'travel2u-856f2.firebaseapp.com',
-    storageBucket: 'travel2u-856f2.firebasestorage.app',
-    measurementId: 'G-1F831XB2NG',
-  );
+ 
 }
