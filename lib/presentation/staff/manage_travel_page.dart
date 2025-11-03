@@ -3,9 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 
-// Assuming you have a TravelPackage model, but for this example,
-// we'll stick to using the raw Map<String, dynamic> data.
-
 class ManageTravelPage extends StatefulWidget {
   const ManageTravelPage({super.key});
 

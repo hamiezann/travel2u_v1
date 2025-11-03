@@ -1,36 +1,28 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:travel2u_v1/presentation/widgets/custom_card.dart';
 import 'package:travel2u_v1/presentation/widgets/custom_dropdown.dart';
 import 'package:travel2u_v1/presentation/widgets/custom_textfield.dart';
 
 class UserProfile {
-  // String userId;
   String firstName;
   String lastName;
-  String username;
   String phoneNo;
   String address;
   String country;
   String city;
-  String password;
-  String preferredTravelStyle;
+  // String password;
   DateTime? dateOfBirth;
   String status;
-
   UserProfile({
-    // this.userId = '',
     this.firstName = '',
     this.lastName = '',
-    this.username = '',
     this.phoneNo = '',
     this.address = '',
     this.country = '',
     this.city = '',
-    this.password = '',
-    this.preferredTravelStyle = '',
+    // this.password = '',
     this.dateOfBirth,
     this.status = 'Active',
   });
@@ -47,67 +39,50 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   final _formKey = GlobalKey<FormState>();
-  // late UserProfile _profile;
   UserProfile _profile = UserProfile(
     firstName: '',
     lastName: '',
-    username: '',
     phoneNo: '',
     address: '',
     country: '',
     city: '',
-    password: '',
-    preferredTravelStyle: '',
+    // password: '',
     dateOfBirth: DateTime.now(),
     status: '',
   );
   bool _isLoading = false;
-  bool _obscurePassword = true;
-  bool _obscureConfirmPassword = true;
+  // bool _obscurePassword = true;
+  // bool _obscureOldPassword = true;
+  // bool _obscureConfirmPassword = true;
 
   // Controllers
   late TextEditingController _firstNameController;
   late TextEditingController _lastNameController;
-  late TextEditingController _usernameController;
   late TextEditingController _phoneController;
   late TextEditingController _addressController;
   late TextEditingController _countryController;
   late TextEditingController _cityController;
-  late TextEditingController _passwordController;
-  late TextEditingController _confirmPasswordController;
+  // late TextEditingController _passwordController;
+  // late TextEditingController _confirmPasswordController;
+  // late TextEditingController _oldPasswordController;
   late TextEditingController _dobController;
   String? _profileImageUrl;
   String? userRole;
-
-  final List<String> _travelStyles = [
-    'Adventure',
-    'Relaxation',
-    'Cultural',
-    'Family',
-    'Business',
-    'Luxury',
-    'Budget',
-    'Solo',
-    'Group',
-  ];
-
-  final List<String> _statusOptions = ['Active', 'Inactive', 'Suspended'];
 
   @override
   void initState() {
     super.initState();
     _fetchUserProfile();
     _profile = widget.initialProfile ?? UserProfile();
-
     _firstNameController = TextEditingController(text: _profile.firstName);
     _lastNameController = TextEditingController(text: _profile.lastName);
-    _usernameController = TextEditingController(text: _profile.username);
     _phoneController = TextEditingController(text: _profile.phoneNo);
     _addressController = TextEditingController(text: _profile.address);
     _countryController = TextEditingController(text: _profile.country);
     _cityController = TextEditingController(text: _profile.city);
-    _passwordController = TextEditingController();
-    _confirmPasswordController = TextEditingController();
+    // _confirmPasswordController = TextEditingController();
+    // _passwordController = TextEditingController();
+    // _oldPasswordController = TextEditingController();
     _dobController = TextEditingController(
       text:
           _profile.dateOfBirth != null
@@ -120,13 +95,13 @@ class _ProfilePageState extends State<ProfilePage> {
   void dispose() {
     _firstNameController.dispose();
     _lastNameController.dispose();
-    _usernameController.dispose();
     _phoneController.dispose();
     _addressController.dispose();
     _countryController.dispose();
     _cityController.dispose();
-    _passwordController.dispose();
-    _confirmPasswordController.dispose();
+    // _passwordController.dispose();
+    // _oldPasswordController.dispose();
+    // _confirmPasswordController.dispose();
     _dobController.dispose();
     super.dispose();
   }
@@ -173,19 +148,16 @@ class _ProfilePageState extends State<ProfilePage> {
         _profile = UserProfile(
           firstName: data['firstName'] ?? '',
           lastName: data['lastName'] ?? '',
-          username: data['userName'] ?? '',
           phoneNo: data['phone'] ?? '',
           address: data['address'] ?? '',
           country: data['country'] ?? '',
           city: data['city'] ?? '',
-          preferredTravelStyle: data['preferredTravel'] ?? '',
           dateOfBirth:
               data['dob'] != null ? (data['dob'] as Timestamp).toDate() : null,
           status: data['status'] ?? 'Active',
         );
         _firstNameController.text = _profile.firstName;
         _lastNameController.text = _profile.lastName;
-        _usernameController.text = _profile.username;
         _phoneController.text = _profile.phoneNo;
         _addressController.text = _profile.address;
         _countryController.text = _profile.country;
@@ -200,9 +172,37 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  Future<bool> _checkUniquePhoneNo(String inputtedPhoneNo) async {
+    if (inputtedPhoneNo.isEmpty) {
+      return true;
+    }
+
+    try {
+      final querySnapshot =
+          await FirebaseFirestore.instance
+              .collection('users')
+              .where('phone', isEqualTo: inputtedPhoneNo)
+              .limit(1)
+              .get();
+      if (querySnapshot.docs.isEmpty) {
+        return true;
+      } else {
+        String currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
+        if (querySnapshot.docs.length == 1 &&
+            querySnapshot.docs.first.id == currentUserId) {
+          return true;
+        }
+
+        return false;
+      }
+    } catch (e) {
+      debugPrint('Error checking phone no uniqueness: $e');
+      return false;
+    }
+  }
+
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
-
     _formKey.currentState!.save();
 
     setState(() => _isLoading = true);
@@ -212,18 +212,22 @@ class _ProfilePageState extends State<ProfilePage> {
       if (user == null) {
         throw Exception('User not logged in');
       }
-
+      bool isUnique = await _checkUniquePhoneNo(_phoneController.text);
+      if (!isUnique) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('This phone number is not available.')),
+        );
+        return;
+      }
       final profileCollection = FirebaseFirestore.instance.collection('users');
       final profileData = {
         'firstName': _profile.firstName,
         'lastName': _profile.lastName,
-        'userName': _profile.username,
         'dob': _profile.dateOfBirth,
         'phone': _profile.phoneNo,
         'address': _profile.address,
         'city': _profile.city,
         'country': _profile.country,
-        'preferredTravel': _profile.preferredTravelStyle,
         'updatedAt': FieldValue.serverTimestamp(),
       };
 
@@ -231,12 +235,58 @@ class _ProfilePageState extends State<ProfilePage> {
           .doc(user.uid)
           .set(profileData, SetOptions(merge: true));
 
-      // Optional: update password if user entered a new one
-      if (_profile.password != null && _profile.password!.isNotEmpty) {
-        await user.updatePassword(_profile.password!);
-      }
+      // final newPassword = _profile.password?.trim();
+      // final oldPassword = _oldPasswordController.text.trim();
+
+      // if (newPassword != null && newPassword.isNotEmpty) {
+      //   try {
+      //     if (oldPassword.isEmpty) {
+      //       throw FirebaseAuthException(
+      //         code: 'missing-old-password',
+      //         message: 'Please enter your old password to change it.',
+      //       );
+      //     }
+
+      //     final email = user.email;
+      //     if (email == null) {
+      //       throw Exception('User email not found.');
+      //     }
+
+      //     final cred = EmailAuthProvider.credential(
+      //       email: email,
+      //       password: oldPassword,
+      //     );
+
+      //     await user.reauthenticateWithCredential(cred);
+
+      //     await user.updatePassword(newPassword);
+
+      //     if (mounted) {
+      //       ScaffoldMessenger.of(context).showSnackBar(
+      //         const SnackBar(
+      //           content: Text('Password updated successfully!'),
+      //           backgroundColor: Colors.green,
+      //         ),
+      //       );
+      //     }
+      //   } on FirebaseAuthException catch (e) {
+      //     String message = 'Error updating password: ${e.message}';
+      //     if (e.code == 'wrong-password') {
+      //       message = 'The old password you entered is incorrect.';
+      //     } else if (e.code == 'requires-recent-login') {
+      //       message = 'Please log in again to change your password.';
+      //     } else if (e.code == 'missing-old-password') {
+      //       message = e.message!;
+      //     }
+
+      //     ScaffoldMessenger.of(
+      //       context,
+      //     ).showSnackBar(SnackBar(content: Text(message)));
+      //   }
+      // }
 
       if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Profile updated successfully!'),
@@ -306,22 +356,6 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                   const SizedBox(height: 16),
                   CustomTextField(
-                    controller: _usernameController,
-                    label: 'Username',
-                    icon: Icons.account_circle_outlined,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Username is required';
-                      }
-                      if (value.length < 3) {
-                        return 'Username must be at least 3 characters';
-                      }
-                      return null;
-                    },
-                    onSaved: (value) => _profile.username = value ?? '',
-                  ),
-                  const SizedBox(height: 16),
-                  CustomTextField(
                     controller: _dobController,
                     label: 'Date of Birth',
                     icon: Icons.calendar_today_outlined,
@@ -349,7 +383,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     label: 'Phone Number',
                     icon: Icons.phone_outlined,
                     keyboardType: TextInputType.phone,
-                    validator: (value) {
+                    validator: (String? value) {
                       if (value == null || value.isEmpty) {
                         return 'Phone number is required';
                       }
@@ -413,118 +447,145 @@ class _ProfilePageState extends State<ProfilePage> {
               const SizedBox(height: 32),
 
               // Preferences Section
-              if (userRole == "customer") ...[
-                _buildSectionHeader('Preferences'),
-                const SizedBox(height: 16),
-                CustomCard(
-                  children: [
-                    CustomDropdownField(
-                      label: 'Preferred Travel Style',
-                      icon: Icons.flight_outlined,
-                      value:
-                          _profile.preferredTravelStyle.isEmpty
-                              ? null
-                              : _profile.preferredTravelStyle,
-                      items: _travelStyles,
-                      onChanged: (value) {
-                        setState(() {
-                          _profile.preferredTravelStyle = value ?? '';
-                        });
-                      },
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please select a travel style';
-                        }
-                        return null;
-                      },
-                    ),
+              // if (userRole == "customer") ...[
+              //   _buildSectionHeader('Preferences'),
+              //   const SizedBox(height: 16),
+              //   CustomCard(
+              //     children: [
+              //       CustomDropdownField(
+              //         label: 'Preferred Travel Style',
+              //         icon: Icons.flight_outlined,
+              //         value:
+              //             _profile.preferredTravelStyle.isEmpty
+              //                 ? null
+              //                 : _profile.preferredTravelStyle,
+              //         items: _travelStyles,
+              //         onChanged: (value) {
+              //           setState(() {
+              //             _profile.preferredTravelStyle = value ?? '';
+              //           });
+              //         },
+              //         validator: (value) {
+              //           if (value == null || value.isEmpty) {
+              //             return 'Please select a travel style';
+              //           }
+              //           return null;
+              //         },
+              //       ),
 
-                    // const SizedBox(height: 16),
-                    // _buildDropdownField(
-                    //   label: 'Account Status',
-                    //   icon: Icons.verified_user_outlined,
-                    //   value: _profile.status,
-                    //   items: _statusOptions,
-                    //   onChanged: (value) {
-                    //     setState(() {
-                    //       _profile.status = value ?? 'Active';
-                    //     });
-                    //   },
-                    // ),
-                  ],
-                ),
-                const SizedBox(height: 32),
-              ],
-
-              // ),
+              //       // const SizedBox(height: 16),
+              //       // _buildDropdownField(
+              //       //   label: 'Account Status',
+              //       //   icon: Icons.verified_user_outlined,
+              //       //   value: _profile.status,
+              //       //   items: _statusOptions,
+              //       //   onChanged: (value) {
+              //       //     setState(() {
+              //       //       _profile.status = value ?? 'Active';
+              //       //     });
+              //       //   },
+              //       // ),
+              //     ],
+              //   ),
+              //   const SizedBox(height: 32),
+              // ],
 
               // Security Section
-              _buildSectionHeader('Security'),
-              const SizedBox(height: 16),
-              CustomCard(
-                children: [
-                  CustomTextField(
-                    controller: _passwordController,
-                    label: 'New Password',
-                    icon: Icons.lock_outline,
-                    obscureText: _obscurePassword,
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword
-                            ? Icons.visibility_outlined
-                            : Icons.visibility_off_outlined,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _obscurePassword = !_obscurePassword;
-                        });
-                      },
-                    ),
-                    helperText: 'Leave blank to keep current password',
-                    validator: (value) {
-                      if (value != null && value.isNotEmpty) {
-                        if (value.length < 8) {
-                          return 'Password must be at least 8 characters';
-                        }
-                      }
-                      return null;
-                    },
-                    onSaved: (value) {
-                      if (value != null && value.isNotEmpty) {
-                        _profile.password = value;
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  CustomTextField(
-                    controller: _confirmPasswordController,
-                    label: 'Confirm New Password',
-                    icon: Icons.lock_outline,
-                    obscureText: _obscureConfirmPassword,
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscureConfirmPassword
-                            ? Icons.visibility_outlined
-                            : Icons.visibility_off_outlined,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _obscureConfirmPassword = !_obscureConfirmPassword;
-                        });
-                      },
-                    ),
-                    validator: (value) {
-                      if (_passwordController.text.isNotEmpty) {
-                        if (value != _passwordController.text) {
-                          return 'Passwords do not match';
-                        }
-                      }
-                      return null;
-                    },
-                  ),
-                ],
-              ),
-
+              // _buildSectionHeader('Security'),
+              // const SizedBox(height: 16),
+              // CustomCard(
+              //   children: [
+              //     CustomTextField(
+              //       controller: _oldPasswordController,
+              //       label: 'Old Password',
+              //       icon: Icons.lock_outline,
+              //       obscureText: _obscureOldPassword,
+              //       suffixIcon: IconButton(
+              //         onPressed: () {
+              //           setState(() {
+              //             _obscureOldPassword = !_obscureOldPassword;
+              //           });
+              //         },
+              //         icon: Icon(
+              //           _obscureOldPassword
+              //               ? Icons.visibility_outlined
+              //               : Icons.visibility_off_outlined,
+              //         ),
+              //       ),
+              //       validator: (value) {
+              //         if (_passwordController.text.isNotEmpty &&
+              //             (value == null || value.isEmpty)) {
+              //           return 'Please enter your old password to change to a new one.';
+              //         }
+              //         return null;
+              //       },
+              //     ),
+              //   ],
+              // ),
+              // const SizedBox(height: 16),
+              // CustomCard(
+              //   children: [
+              //     CustomTextField(
+              //       controller: _passwordController,
+              //       label: 'New Password',
+              //       icon: Icons.lock_outline,
+              //       obscureText: _obscurePassword,
+              //       suffixIcon: IconButton(
+              //         icon: Icon(
+              //           _obscurePassword
+              //               ? Icons.visibility_outlined
+              //               : Icons.visibility_off_outlined,
+              //         ),
+              //         onPressed: () {
+              //           setState(() {
+              //             _obscurePassword = !_obscurePassword;
+              //           });
+              //         },
+              //       ),
+              //       helperText: 'Leave blank to keep current password',
+              //       validator: (value) {
+              //         if (value != null && value.isNotEmpty) {
+              //           if (value.length < 8) {
+              //             return 'Password must be at least 8 characters';
+              //           }
+              //         }
+              //         return null;
+              //       },
+              //       onSaved: (value) {
+              //         if (value != null && value.isNotEmpty) {
+              //           _profile.password = value;
+              //         }
+              //       },
+              //     ),
+              //     const SizedBox(height: 16),
+              //     CustomTextField(
+              //       controller: _confirmPasswordController,
+              //       label: 'Confirm New Password',
+              //       icon: Icons.lock_outline,
+              //       obscureText: _obscureConfirmPassword,
+              //       suffixIcon: IconButton(
+              //         icon: Icon(
+              //           _obscureConfirmPassword
+              //               ? Icons.visibility_outlined
+              //               : Icons.visibility_off_outlined,
+              //         ),
+              //         onPressed: () {
+              //           setState(() {
+              //             _obscureConfirmPassword = !_obscureConfirmPassword;
+              //           });
+              //         },
+              //       ),
+              //       validator: (value) {
+              //         if (_passwordController.text.isNotEmpty) {
+              //           if (value != _passwordController.text) {
+              //             return 'Passwords do not match';
+              //           }
+              //         }
+              //         return null;
+              //       },
+              //     ),
+              //   ],
+              // ),
               const SizedBox(height: 32),
 
               // Save Button

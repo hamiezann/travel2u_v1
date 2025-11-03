@@ -5,6 +5,7 @@ class Activity {
   final String duration;
   final String location;
   final List<String> foodType;
+  final int day;
 
   Activity({
     required this.id,
@@ -13,6 +14,7 @@ class Activity {
     required this.duration,
     required this.location,
     required this.foodType,
+    required this.day,
   });
 
   factory Activity.fromJson(Map<String, dynamic> json) {
@@ -23,6 +25,7 @@ class Activity {
       duration: json['duration'],
       location: json['location'],
       foodType: List<String>.from(json['foodType'] ?? []),
+      day: json['day'],
     );
   }
 
@@ -33,5 +36,6 @@ class Activity {
     'duration': duration,
     'location': location,
     'foodType': foodType,
+    'day': day,
   };
 }

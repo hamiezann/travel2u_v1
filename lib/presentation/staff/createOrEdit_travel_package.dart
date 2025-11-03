@@ -32,24 +32,65 @@ class _CreateOrEditTravelPackagePageState
     duration: 0,
     price: 0.0,
     imageUrl: '',
+    tourGuide: '',
+    flightDetail: '',
+    flightClass: '',
+    hotelDetail: '',
+    hotelRating: '',
     tags: const [],
     activityPool: [],
+    activitiesByDay: [],
   );
   bool isEditMode = false;
+
   final _nameController = TextEditingController();
   final _destinationController = TextEditingController();
   final _durationController = TextEditingController();
+  DateTimeRange? _selectedDateRange;
   final _priceController = TextEditingController();
   var _imageUrlController = TextEditingController();
-  // final _tagsController = TextEditingController();
+  var _tourGuideController = TextEditingController();
+  final _hotelDetailController = TextEditingController();
+  final _hotelRatingController = TextEditingController();
+  final _flightClassController = TextEditingController();
+  final _flightDetailController = TextEditingController();
+
+  final List<String> _flightClassList = [
+    "Economy Class",
+    "Business Class",
+    "First Class",
+    "No Flight Used",
+  ];
+  final List<String> _hotelRatingList = [
+    "1 Star",
+    "2 Star",
+    "3 Star",
+    "4 Star",
+    "5 Star",
+  ];
+
+  final List<String> _timeSlots = [
+    '08:00 - 10:00',
+    '10:00 - 12:00',
+    '12:00 - 14:00',
+    '14:00 - 16:00',
+    '16:00 - 18:00',
+    '18:00 - 20:00',
+    '20:00 - 22:00',
+    '22:00 - 00:00',
+  ];
+
+  // List<String> selectedSlots = [];
   List<String> _selectedTags = [];
   List<String> _selectedFoodTypes = [];
   String _selectedActivityTypes = '';
   List<String> _tagsList = [];
   List<String> _foodTypesList = [];
+  List<String> _flightAirlineList = [];
   List<String> _activityTypesList = [];
+  List _staffNames = [];
   bool _isLoadingTags = true;
-  // File? _selectedImage;
+  bool _isLoadingStaffNames = false;
   File? _selectedImageFile;
   String? _oldImageUrl;
   bool _isSavingLoading = false;
@@ -57,12 +98,16 @@ class _CreateOrEditTravelPackagePageState
   bool _hasUnsavedChanges = false;
   bool _isSubmitting = false;
 
+  int _currentDay = 1;
+  Map<int, List<String>> _takenSlotsByDay = {};
   @override
   void initState() {
     super.initState();
     _fetchTags();
     _fetchFoodTypes();
     _fetchActivityTypes();
+    _fetchFlightClass();
+    _fetchStaffNames();
     ensureSignedIn();
     if (widget.packageId != null && widget.packageId!.isNotEmpty) {
       isEditMode = true;
@@ -73,6 +118,11 @@ class _CreateOrEditTravelPackagePageState
     _destinationController.addListener(_markAsChanged);
     _durationController.addListener(_markAsChanged);
     _priceController.addListener(_markAsChanged);
+    _tourGuideController.addListener(_markAsChanged);
+    _hotelDetailController.addListener(_markAsChanged);
+    _hotelRatingController.addListener(_markAsChanged);
+    _flightClassController.addListener(_markAsChanged);
+    _flightDetailController.addListener(_markAsChanged);
   }
 
   void _markAsChanged() {
@@ -93,14 +143,35 @@ class _CreateOrEditTravelPackagePageState
 
       if (doc.exists) {
         final data = doc.data();
+        debugPrint('Fetched data: ${doc.data()}');
+
         if (data != null) {
           setState(() {
             _travelPackage = TravelPackage.fromJson(data);
+            _travelPackage.activityPool =
+                _travelPackage.activitiesByDay
+                    .expand((dayList) => dayList)
+                    .toList();
+            _takenSlotsByDay.clear();
+            for (final activity in _travelPackage.activityPool) {
+              _takenSlotsByDay[activity.day] ??= [];
+              _takenSlotsByDay[activity.day]!.addAll(
+                activity.duration.split(',').map((s) => s.trim()),
+              );
+            }
+
+            // 🧭 Ensure current day starts at 1
+            _currentDay = 1;
             _nameController.text = _travelPackage.name;
             _destinationController.text = _travelPackage.destination;
             _durationController.text = _travelPackage.duration.toString();
             _priceController.text = _travelPackage.price.toString();
             _imageUrlController.text = _travelPackage.imageUrl;
+            _tourGuideController.text = _travelPackage.tourGuide;
+            _hotelDetailController.text = _travelPackage.hotelDetail;
+            _hotelRatingController.text = _travelPackage.hotelRating;
+            _flightDetailController.text = _travelPackage.flightDetail;
+            _flightClassController.text = _travelPackage.flightClass;
             _selectedTags = _travelPackage.tags;
           });
         }
@@ -159,6 +230,54 @@ class _CreateOrEditTravelPackagePageState
     }
   }
 
+  Future<void> _fetchStaffNames() async {
+    try {
+      final querySnapshot =
+          await FirebaseFirestore.instance
+              .collection('users')
+              .where('role', isEqualTo: 'staff')
+              .get();
+
+      final names =
+          querySnapshot.docs
+              .map((doc) => doc['firstName'] ?? '') // adjust field if needed
+              .where((name) => name.isNotEmpty)
+              .toList();
+
+      setState(() {
+        _staffNames = names;
+        _isLoadingStaffNames = false;
+      });
+    } catch (e) {
+      debugPrint('Error fetching staff names: $e');
+      setState(() => _isLoadingStaffNames = false);
+    }
+  }
+
+  Future<void> _fetchFlightClass() async {
+    try {
+      final doc =
+          await FirebaseFirestore.instance
+              .collection('taxonomy')
+              .doc('flightClass')
+              .get();
+      if (doc.exists) {
+        final data = doc.data();
+        if (data != null && data['values'] != null) {
+          setState(() {
+            _flightAirlineList = List<String>.from(data['values']);
+            _isLoadingTags = false;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching class: $e');
+      setState(() {
+        _isLoadingTags = false;
+      });
+    }
+  }
+
   Future<void> _fetchActivityTypes() async {
     try {
       final doc =
@@ -190,16 +309,10 @@ class _CreateOrEditTravelPackagePageState
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
     if (pickedFile != null) {
-      // setState(() {
-      //   _selectedImageFile = File(pickedFile.path);
-      // });
       _selectedImageFile = File(pickedFile.path);
     }
     setState(() {
-      // The image has been picked (or not), so stop the picker loading state.
       _isUploadingImage = false;
-
-      // If a file was picked, _selectedImageFile is updated.
     });
   }
 
@@ -213,9 +326,9 @@ class _CreateOrEditTravelPackagePageState
         try {
           final oldRef = FirebaseStorage.instance.refFromURL(_oldImageUrl!);
           await oldRef.delete();
-          print('Old image deleted.');
+          // print('Old image deleted.');
         } catch (e) {
-          print('No old image to delete or failed: $e');
+          // print('No old image to delete or failed: $e');
         }
       }
 
@@ -230,7 +343,7 @@ class _CreateOrEditTravelPackagePageState
 
       return imageUrl;
     } catch (e) {
-      print('Error uploading image: $e');
+      // print('Error uploading image: $e');
       return null;
     }
   }
@@ -246,21 +359,65 @@ class _CreateOrEditTravelPackagePageState
     try {
       await ensureSignedIn();
       _saveForm();
+
+      setState(() => _isSavingLoading = true);
+
+      int totalDays =
+          int.tryParse(_durationController.text.split(' ').first) ?? 1;
+
+      // ✅ Check that every day has exactly 8 filled slots
+      bool allDaysFilled = true;
+      for (int day = 1; day <= totalDays; day++) {
+        if ((_takenSlotsByDay[day]?.length ?? 0) < 8) {
+          allDaysFilled = false;
+          break;
+        }
+      }
+
+      if (!allDaysFilled) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Please fill all 8 activity slots for each day before saving.',
+            ),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+        setState(() => _isSavingLoading = false);
+        return;
+      }
+
       final travelCollection = FirebaseFirestore.instance.collection(
         'travel_packages',
       );
       final user = FirebaseAuth.instance.currentUser;
 
-      // if new package, generate ID
+      // 🆕 Generate ID if new package
       if (!isEditMode && _travelPackage.id.isEmpty) {
         _travelPackage.id = travelCollection.doc().id;
       }
 
-      // Upload or replace image
+      // 📸 Upload image if new or replaced
       final imageUrl = await uploadImage(_travelPackage.id);
       if (imageUrl != null) {
         _travelPackage.imageUrl = imageUrl;
       }
+
+      // 🔧 Prepare structured data grouped by day
+      Map<int, List<Activity>> activitiesByDay = {};
+      for (var activity in _travelPackage.activityPool) {
+        activitiesByDay.putIfAbsent(activity.day, () => []);
+        activitiesByDay[activity.day]!.add(activity);
+      }
+
+      // Convert to list form for Firestore
+      final activitiesByDayList =
+          activitiesByDay.entries.map((entry) {
+            return {
+              'day': entry.key,
+              'activities': entry.value.map((a) => a.toJson()).toList(),
+            };
+          }).toList();
 
       final packageData = {
         'id': _travelPackage.id,
@@ -269,41 +426,37 @@ class _CreateOrEditTravelPackagePageState
         'duration': _travelPackage.duration,
         'price': _travelPackage.price,
         'imageUrl': _travelPackage.imageUrl,
+        'tourGuide': _travelPackage.tourGuide,
+        'hotelDetail': _travelPackage.hotelDetail,
+        'hotelRating': _travelPackage.hotelRating,
+        'flightDetail': _travelPackage.flightDetail,
+        'flightClass': _travelPackage.flightClass,
         'tags': _travelPackage.tags,
         'creatorId': user?.uid,
-        'activityPool':
-            _travelPackage.activityPool.map((a) => a.toJson()).toList(),
+        'activitiesByDay': activitiesByDayList,
         if (isEditMode)
           'updatedAt': FieldValue.serverTimestamp()
         else
           'createdAt': FieldValue.serverTimestamp(),
       };
 
-      try {
-        await (isEditMode
-            ? travelCollection.doc(_travelPackage.id).update(packageData)
-            : travelCollection.doc(_travelPackage.id).set(packageData));
+      await (isEditMode
+          ? travelCollection.doc(_travelPackage.id).update(packageData)
+          : travelCollection.doc(_travelPackage.id).set(packageData));
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              isEditMode
-                  ? 'Travel Package updated successfully!'
-                  : 'Travel Package added successfully!',
-            ),
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isEditMode
+                ? 'Travel Package updated successfully!'
+                : 'Travel Package added successfully!',
           ),
-        );
-      } catch (e) {
-        // debugPrint('Error saving travel package: $e');
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to save travel package')),
-        );
-      } finally {
-        setState(() => _isSavingLoading = false);
-      }
+        ),
+      );
 
-      // Optionally reset form or navigate away
+      // 🧹 Reset after saving
       setState(() {
+        _isSavingLoading = false;
         _currentStep = 0;
         _travelPackage = TravelPackage(
           id: '',
@@ -312,17 +465,21 @@ class _CreateOrEditTravelPackagePageState
           duration: 0,
           price: 0.0,
           imageUrl: '',
+          hotelDetail: '',
+          hotelRating: '',
+          flightDetail: '',
+          flightClass: '',
+          tourGuide: '',
           tags: const [],
           activityPool: [],
+          activitiesByDay: [],
         );
+        _takenSlotsByDay.clear();
       });
-      // send back to list page
-      Navigator.popAndPushNamed(
-        context,
-        '/staff/manage-travel',
-        // (route) => false,
-      );
+
+      Navigator.popAndPushNamed(context, '/staff/manage-travel');
     } catch (e) {
+      setState(() => _isSavingLoading = false);
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Error: $e')));
@@ -331,17 +488,15 @@ class _CreateOrEditTravelPackagePageState
 
   @override
   void dispose() {
-    // _nameController.dispose();
-    // _destinationController.dispose();
-    // _durationController.dispose();
-    // _priceController.dispose();
-    // _imageUrlController.dispose();
-    // _tagsController.dispose();
-
     _nameController.removeListener(_markAsChanged);
     _destinationController.removeListener(_markAsChanged);
     _durationController.removeListener(_markAsChanged);
     _priceController.removeListener(_markAsChanged);
+    _tourGuideController.removeListener(_markAsChanged);
+    _hotelDetailController.removeListener(_markAsChanged);
+    _hotelRatingController.removeListener(_markAsChanged);
+    _flightDetailController.removeListener(_markAsChanged);
+    _flightClassController.removeListener(_markAsChanged);
     // _imageUrlController.removeListener(_markAsChanged);
     // _tagsController.removeListener(_markAsChanged);
     super.dispose();
@@ -378,10 +533,17 @@ class _CreateOrEditTravelPackagePageState
   void _saveForm() {
     _travelPackage.name = _nameController.text;
     _travelPackage.destination = _destinationController.text;
-    _travelPackage.duration = int.tryParse(_durationController.text) ?? 0;
+    // _travelPackage.duration = int.tryParse(_durationController.text) ?? 0;
+    _travelPackage.duration =
+        int.tryParse(_durationController.text.split(' ').first) ?? 0;
     _travelPackage.price = double.tryParse(_priceController.text) ?? 0.0;
     _travelPackage.imageUrl = _imageUrlController.text;
     _travelPackage.tags = _selectedTags;
+    _travelPackage.tourGuide = _tourGuideController.text;
+    _travelPackage.hotelDetail = _hotelDetailController.text;
+    _travelPackage.hotelRating = _hotelRatingController.text;
+    _travelPackage.flightDetail = _flightDetailController.text;
+    _travelPackage.flightClass = _flightClassController.text;
   }
 
   // Future<void> _handleBackPress() async {
@@ -482,7 +644,6 @@ class _CreateOrEditTravelPackagePageState
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
-                // child: Form(key: _formKey, child: _buildPackageContent()),
                 child: Container(
                   constraints: const BoxConstraints(maxWidth: 600),
                   child: Form(key: _formKey, child: _buildPackageContent()),
@@ -657,32 +818,215 @@ class _CreateOrEditTravelPackagePageState
                       : null,
         ),
         const SizedBox(height: 16),
+        // TextFormField(
+        //   controller: _tourGuideController,
+        //   decoration: InputDecoration(
+        //     labelText: 'Tour Guide Name',
+        //     // hintText: 'e.g., Bali, Indonesia',
+        //     prefixIcon: const Icon(Icons.hail_outlined),
+        //     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        //     filled: true,
+        //     fillColor: Colors.grey.shade50,
+        //   ),
+        //   validator:
+        //       (value) =>
+        //           (value == null || value.isEmpty)
+        //               ? 'Please enter tour guide name'
+        //               : null,
+        // ),
+        Autocomplete<String>(
+          optionsBuilder: (TextEditingValue textEditingValue) {
+            if (textEditingValue.text.isEmpty) {
+              return const Iterable<String>.empty();
+            }
+            return _staffNames
+                .cast<String>()
+                .where(
+                  (option) => option.toLowerCase().contains(
+                    textEditingValue.text.toLowerCase(),
+                  ),
+                )
+                .toList();
+          },
+          fieldViewBuilder: (
+            BuildContext context,
+            TextEditingController fieldTextEditingController,
+            FocusNode fieldFocusNode,
+            VoidCallback onFieldSubmitted,
+          ) {
+            _tourGuideController = fieldTextEditingController;
+            return TextFormField(
+              // controller: fieldTextEditingController,
+              controller: _tourGuideController,
+              focusNode: fieldFocusNode,
+              decoration: InputDecoration(
+                labelText: 'Tour Guide Name',
+                prefixIcon: const Icon(Icons.hail_outlined),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                filled: true,
+                fillColor: Colors.grey.shade50,
+              ),
+              validator:
+                  (value) =>
+                      (value == null || value.isEmpty)
+                          ? 'Please enter tour guide name'
+                          : null,
+            );
+          },
+          onSelected: (String selection) {
+            debugPrint('Selected: $selection');
+            _tourGuideController.text = selection;
+          },
+        ),
+
+        const SizedBox(height: 16),
+        DropdownButtonFormField<String>(
+          value:
+              _flightClassList.contains(_flightClassController.text)
+                  ? _flightClassController.text
+                  : null,
+          items:
+              _flightClassList.map((type) {
+                return DropdownMenuItem<String>(value: type, child: Text(type));
+              }).toList(),
+          onChanged: (value) {
+            setState(() => _flightClassController.text = value ?? '');
+          },
+          decoration: InputDecoration(
+            labelText: 'Flight Class',
+            prefixIcon: const Icon(Icons.flight_class_outlined),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            filled: true,
+            fillColor: Colors.grey.shade50,
+          ),
+        ),
+
+        const SizedBox(height: 16),
+        DropdownButtonFormField<String>(
+          value:
+              _flightAirlineList.contains(_flightDetailController.text)
+                  ? _flightDetailController.text
+                  : null,
+          items:
+              _flightAirlineList.map((type) {
+                return DropdownMenuItem<String>(value: type, child: Text(type));
+              }).toList(),
+          onChanged: (value) {
+            setState(() => _flightDetailController.text = value ?? '');
+          },
+          decoration: InputDecoration(
+            labelText: 'Flight Detail',
+            prefixIcon: const Icon(Icons.flight),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            filled: true,
+            fillColor: Colors.grey.shade50,
+          ),
+        ),
+
+        const SizedBox(height: 16),
+        TextFormField(
+          controller: _hotelDetailController,
+          decoration: InputDecoration(
+            labelText: 'Hotel Detail',
+            // hintText: 'e.g., Bali, Indonesia',
+            prefixIcon: const Icon(Icons.hotel_outlined),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            filled: true,
+            fillColor: Colors.grey.shade50,
+          ),
+          validator:
+              (value) =>
+                  (value == null || value.isEmpty)
+                      ? 'Please enter hotel detail'
+                      : null,
+        ),
+        const SizedBox(height: 16),
+        DropdownButtonFormField<String>(
+          value:
+              _hotelRatingList.contains(_hotelRatingController.text)
+                  ? _hotelRatingController.text
+                  : null,
+          items:
+              _hotelRatingList.map((type) {
+                return DropdownMenuItem<String>(value: type, child: Text(type));
+              }).toList(),
+          onChanged: (value) {
+            setState(() => _hotelRatingController.text = value ?? '');
+          },
+          decoration: InputDecoration(
+            labelText: 'Hotel Rating',
+            prefixIcon: const Icon(Icons.hotel_class),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            filled: true,
+            fillColor: Colors.grey.shade50,
+          ),
+        ),
+        const SizedBox(height: 16),
 
         // Duration and Price
         Row(
           children: [
             Expanded(
-              child: TextFormField(
-                controller: _durationController,
-                decoration: InputDecoration(
-                  labelText: 'Duration (days)',
-                  prefixIcon: const Icon(Icons.calendar_today),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  filled: true,
-                  fillColor: Colors.grey.shade50,
-                ),
-                keyboardType: TextInputType.number,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Required';
+              child: GestureDetector(
+                onTap: () async {
+                  final DateTimeRange? pickedRange = await showDateRangePicker(
+                    context: context,
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2100),
+                    initialDateRange: _selectedDateRange,
+                    builder: (context, child) {
+                      return Theme(
+                        data: Theme.of(context).copyWith(
+                          colorScheme: ColorScheme.light(
+                            primary: Colors.blue.shade900, // header background
+                            onPrimary: Colors.white, // header text color
+                            onSurface: Colors.black, // body text color
+                          ),
+                          textButtonTheme: TextButtonThemeData(
+                            style: TextButton.styleFrom(
+                              foregroundColor:
+                                  Colors.blue.shade900, // button color
+                            ),
+                          ),
+                        ),
+                        child: child!,
+                      );
+                    },
+                  );
+
+                  if (pickedRange != null) {
+                    setState(() {
+                      _selectedDateRange = pickedRange;
+
+                      final difference =
+                          pickedRange.end.difference(pickedRange.start).inDays +
+                          1;
+                      _durationController.text = '$difference days';
+                    });
                   }
-                  if (int.tryParse(value) == null) {
-                    return 'Invalid';
-                  }
-                  return null;
                 },
+                child: AbsorbPointer(
+                  child: TextFormField(
+                    controller: _durationController,
+                    decoration: InputDecoration(
+                      labelText: 'Travel Duration',
+                      hintText: 'Select date range',
+                      prefixIcon: const Icon(Icons.calendar_today),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey.shade50,
+                    ),
+                    validator:
+                        (value) =>
+                            (value == null || value.isEmpty)
+                                ? 'Please select travel dates'
+                                : null,
+                  ),
+                ),
               ),
             ),
             const SizedBox(width: 16),
@@ -811,205 +1155,303 @@ class _CreateOrEditTravelPackagePageState
     );
   }
 
-  // Step 2: Activities Form
   Widget _buildStep2Form() {
+    int totalDays =
+        int.tryParse(_durationController.text.split(' ').first) ?? 1;
+    bool isDayFull(int day) {
+      return (_takenSlotsByDay[day]?.length ?? 0) >= 8;
+    }
+
+    bool canAddActivity = !isDayFull(_currentDay);
+
     void addActivity() {
       showDialog(
         context: context,
         builder: (context) {
           final idController = TextEditingController();
           final nameController = TextEditingController();
-          final durationController = TextEditingController();
           final locationController = TextEditingController();
+          List<String> localSelectedSlots = [];
 
-          return Dialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 500),
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Add Activity',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Activity ID
-                      TextField(
-                        controller: idController,
-                        decoration: InputDecoration(
-                          labelText: 'Activity ID',
-                          prefixIcon: const Icon(Icons.tag),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          filled: true,
-                          fillColor: Colors.grey.shade50,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Activity Name
-                      TextField(
-                        controller: nameController,
-                        decoration: InputDecoration(
-                          labelText: 'Activity Name',
-                          prefixIcon: const Icon(Icons.local_activity),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          filled: true,
-                          fillColor: Colors.grey.shade50,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Activity Type Dropdown
-                      DropdownButtonFormField<String>(
-                        value:
-                            _selectedActivityTypes.isNotEmpty
-                                ? _selectedActivityTypes
-                                : null,
-                        items:
-                            _activityTypesList.map((type) {
-                              return DropdownMenuItem<String>(
-                                value: type,
-                                child: Text(type),
-                              );
-                            }).toList(),
-                        onChanged: (value) {
-                          setState(() => _selectedActivityTypes = value ?? '');
-                        },
-                        decoration: InputDecoration(
-                          labelText: 'Activity Type',
-                          prefixIcon: const Icon(Icons.category),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          filled: true,
-                          fillColor: Colors.grey.shade50,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Duration
-                      TextField(
-                        controller: durationController,
-                        decoration: InputDecoration(
-                          labelText: 'Duration',
-                          hintText: 'e.g., 2 hours',
-                          prefixIcon: const Icon(Icons.schedule),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          filled: true,
-                          fillColor: Colors.grey.shade50,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Location
-                      TextField(
-                        controller: locationController,
-                        decoration: InputDecoration(
-                          labelText: 'Location',
-                          prefixIcon: const Icon(Icons.place),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          filled: true,
-                          fillColor: Colors.grey.shade50,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Food Types
-                      MultiSelectDialogField(
-                        items:
-                            _foodTypesList
-                                .map(
-                                  (food) => MultiSelectItem<String>(food, food),
-                                )
-                                .toList(),
-                        title: const Text("Food Options"),
-                        selectedColor: Colors.blue,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.grey.shade300),
-                        ),
-                        buttonIcon: const Icon(Icons.restaurant),
-                        buttonText: Text(
-                          _selectedFoodTypes.isEmpty
-                              ? "Select food types"
-                              : "${_selectedFoodTypes.length} selected",
-                          style: const TextStyle(fontSize: 16),
-                        ),
-                        onConfirm: (results) {
-                          setState(() {
-                            _selectedFoodTypes = List<String>.from(results);
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Action Buttons
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
+          return StatefulBuilder(
+            builder: (context, setStateDialog) {
+              return Dialog(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Container(
+                  constraints: const BoxConstraints(maxWidth: 500),
+                  child: SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text('Cancel'),
-                          ),
-                          const SizedBox(width: 12),
-                          ElevatedButton(
-                            onPressed: () {
-                              final newActivity = Activity(
-                                id: idController.text.trim(),
-                                name: nameController.text.trim(),
-                                type: _selectedActivityTypes.trim(),
-                                duration: durationController.text.trim(),
-                                location: locationController.text.trim(),
-                                foodType: _selectedFoodTypes,
-                              );
-
-                              setState(() {
-                                _travelPackage.activityPool.add(newActivity);
-                              });
-                              Navigator.pop(context);
-                            },
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 24,
-                                vertical: 12,
-                              ),
+                          const Text(
+                            'Add Activity',
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
                             ),
-                            child: const Text('Add Activity'),
+                          ),
+                          const SizedBox(height: 20),
+
+                          // Activity ID
+                          TextField(
+                            controller: idController,
+                            decoration: InputDecoration(
+                              labelText: 'Activity ID',
+                              prefixIcon: const Icon(Icons.tag),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              filled: true,
+                              fillColor: Colors.grey.shade50,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Activity Name
+                          TextField(
+                            controller: nameController,
+                            decoration: InputDecoration(
+                              labelText: 'Activity Name',
+                              prefixIcon: const Icon(Icons.local_activity),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              filled: true,
+                              fillColor: Colors.grey.shade50,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Activity Type
+                          DropdownButtonFormField<String>(
+                            value:
+                                _selectedActivityTypes.isNotEmpty
+                                    ? _selectedActivityTypes
+                                    : null,
+                            items:
+                                _activityTypesList
+                                    .map(
+                                      (type) => DropdownMenuItem<String>(
+                                        value: type,
+                                        child: Text(type),
+                                      ),
+                                    )
+                                    .toList(),
+                            onChanged: (value) {
+                              setState(
+                                () => _selectedActivityTypes = value ?? '',
+                              );
+                            },
+                            decoration: InputDecoration(
+                              labelText: 'Activity Type',
+                              prefixIcon: const Icon(Icons.category),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              filled: true,
+                              fillColor: Colors.grey.shade50,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+
+                          const Text(
+                            'Select Duration Slots',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 8),
+
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children:
+                                _timeSlots.map((slot) {
+                                  // Disable slot if already used for this day
+                                  bool isTaken =
+                                      _takenSlotsByDay[_currentDay]?.contains(
+                                        slot,
+                                      ) ??
+                                      false;
+
+                                  return FilterChip(
+                                    label: Text(slot),
+                                    selected: localSelectedSlots.contains(slot),
+                                    onSelected:
+                                        isTaken
+                                            ? null
+                                            : (selected) {
+                                              setStateDialog(() {
+                                                if (selected) {
+                                                  localSelectedSlots.add(slot);
+                                                } else {
+                                                  localSelectedSlots.remove(
+                                                    slot,
+                                                  );
+                                                }
+                                              });
+                                            },
+                                    selectedColor: Colors.blue.shade100,
+                                    disabledColor: Colors.grey.shade200,
+                                  );
+                                }).toList(),
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Location
+                          TextField(
+                            controller: locationController,
+                            decoration: InputDecoration(
+                              labelText: 'Location',
+                              prefixIcon: const Icon(Icons.place),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              filled: true,
+                              fillColor: Colors.grey.shade50,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Food Types
+                          MultiSelectDialogField(
+                            items:
+                                _foodTypesList
+                                    .map(
+                                      (food) =>
+                                          MultiSelectItem<String>(food, food),
+                                    )
+                                    .toList(),
+                            title: const Text("Food Options"),
+                            selectedColor: Colors.blue,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.grey.shade300),
+                            ),
+                            buttonIcon: const Icon(Icons.restaurant),
+                            buttonText: Text(
+                              _selectedFoodTypes.isEmpty
+                                  ? "Select food types"
+                                  : "${_selectedFoodTypes.length} selected",
+                              style: const TextStyle(fontSize: 16),
+                            ),
+                            onConfirm: (results) {
+                              setStateDialog(() {
+                                _selectedFoodTypes = List<String>.from(results);
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 24),
+
+                          // Action Buttons
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text('Cancel'),
+                              ),
+                              const SizedBox(width: 12),
+                              ElevatedButton(
+                                onPressed: () {
+                                  if (localSelectedSlots.isEmpty) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Please select at least one time slot',
+                                        ),
+                                      ),
+                                    );
+                                    return;
+                                  }
+
+                                  // Prevent exceeding 8 slots per day
+                                  if ((_takenSlotsByDay[_currentDay]?.length ??
+                                              0) +
+                                          localSelectedSlots.length >
+                                      8) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Maximum 8 slots per day allowed',
+                                        ),
+                                      ),
+                                    );
+                                    return;
+                                  }
+
+                                  final newActivity = Activity(
+                                    id: idController.text.trim(),
+                                    name: nameController.text.trim(),
+                                    type: _selectedActivityTypes.trim(),
+                                    duration: localSelectedSlots.join(', '),
+                                    location: locationController.text.trim(),
+                                    foodType: _selectedFoodTypes,
+                                    day: _currentDay,
+                                  );
+
+                                  setState(() {
+                                    _travelPackage.activityPool.add(
+                                      newActivity,
+                                    );
+
+                                    // Mark selected slots as taken
+                                    _takenSlotsByDay[_currentDay] ??= [];
+                                    _takenSlotsByDay[_currentDay]!.addAll(
+                                      localSelectedSlots,
+                                    );
+                                  });
+
+                                  Navigator.pop(context);
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 24,
+                                    vertical: 12,
+                                  ),
+                                ),
+                                child: const Text('Add Activity'),
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
-              ),
-            ),
+              );
+            },
           );
         },
       );
     }
 
-    void removeActivity(int index) {
+    void removeActivity(int dayActivityIndex) {
       setState(() {
-        _travelPackage.activityPool.removeAt(index);
+        // Filter activities for the current day
+        final dayActivities =
+            _travelPackage.activityPool
+                .where((a) => a.day == _currentDay)
+                .toList();
+
+        if (dayActivityIndex < 0 || dayActivityIndex >= dayActivities.length)
+          return;
+
+        final removedActivity = dayActivities[dayActivityIndex];
+
+        // Free up slots for this activity
+        final slots = removedActivity.duration.split(',').map((s) => s.trim());
+        _takenSlotsByDay[removedActivity.day]?.removeWhere(
+          (s) => slots.contains(s),
+        );
+
+        // Remove from main activityPool
+        _travelPackage.activityPool.removeWhere(
+          (a) => a.id == removedActivity.id && a.day == removedActivity.day,
+        );
       });
     }
 
@@ -1022,25 +1464,42 @@ class _CreateOrEditTravelPackagePageState
         ),
         const SizedBox(height: 8),
         Text(
-          'Add activities that are included in this package',
+          'Add activities for each travel day',
           style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
         ),
         const SizedBox(height: 20),
 
-        // Add Activity Button
+        Center(
+          child: Text(
+            'Day $_currentDay of $totalDays',
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+          ),
+        ),
+        const SizedBox(height: 12),
+
         SizedBox(
           width: double.infinity,
           child: OutlinedButton.icon(
-            onPressed: addActivity,
+            onPressed: isDayFull(_currentDay) ? null : addActivity,
             icon: Icon(Icons.add_circle_outline, color: Colors.blue.shade300),
             label: Text(
-              'Add Activity',
-              style: TextStyle(color: Colors.blue.shade300),
+              isDayFull(_currentDay) ? 'Day Full (8/8 slots)' : 'Add Activity',
+              style: TextStyle(
+                color:
+                    isDayFull(_currentDay)
+                        ? Colors.grey.shade400
+                        : Colors.blue.shade300,
+              ),
             ),
             style: OutlinedButton.styleFrom(
               backgroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 14),
-              side: BorderSide(color: Colors.blue.shade300),
+              side: BorderSide(
+                color:
+                    isDayFull(_currentDay)
+                        ? Colors.grey.shade300
+                        : Colors.blue.shade300,
+              ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -1049,7 +1508,7 @@ class _CreateOrEditTravelPackagePageState
         ),
         const SizedBox(height: 24),
 
-        // Activities List
+        // List Activities
         if (_travelPackage.activityPool.isEmpty)
           Container(
             padding: const EdgeInsets.all(32),
@@ -1075,9 +1534,17 @@ class _CreateOrEditTravelPackagePageState
           ListView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            itemCount: _travelPackage.activityPool.length,
+            itemCount:
+                _travelPackage.activityPool
+                    .where((a) => a.day == _currentDay)
+                    .length,
             itemBuilder: (context, index) {
-              final activity = _travelPackage.activityPool[index];
+              final dayActivities =
+                  _travelPackage.activityPool
+                      .where((a) => a.day == _currentDay)
+                      .toList();
+              final activity = dayActivities[index];
+
               return Container(
                 margin: const EdgeInsets.only(bottom: 12),
                 decoration: BoxDecoration(
@@ -1131,6 +1598,36 @@ class _CreateOrEditTravelPackagePageState
               );
             },
           ),
+
+        const SizedBox(height: 16),
+
+        // ✅ Navigation Buttons
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            if (_currentDay > 1)
+              ElevatedButton.icon(
+                icon: const Icon(Icons.arrow_back),
+                label: const Text('Previous Day'),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.grey),
+                onPressed: () {
+                  setState(() {
+                    _currentDay--;
+                  });
+                },
+              ),
+            if (_currentDay < totalDays && isDayFull(_currentDay))
+              ElevatedButton.icon(
+                icon: const Icon(Icons.arrow_forward),
+                label: Text('Next Day (${_currentDay + 1})'),
+                onPressed: () {
+                  setState(() {
+                    _currentDay++;
+                  });
+                },
+              ),
+          ],
+        ),
       ],
     );
   }

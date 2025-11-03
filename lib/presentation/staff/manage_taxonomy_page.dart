@@ -28,6 +28,12 @@ class ManageTaxonomyPage extends StatelessWidget {
         'icon': Icons.restaurant_menu_outlined,
         'color': Colors.orange,
       },
+      {
+        'type': 'flightClass',
+        'title': 'Manage Flight Class',
+        'icon': Icons.flight_takeoff_outlined,
+        'color': Colors.pink,
+      },
       // You can add more here easily
     ];
 

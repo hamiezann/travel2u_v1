@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:travel2u_v1/core/services/auth_service.dart';
 import 'package:travel2u_v1/presentation/staff/manage_activity_page.dart';
+import 'package:travel2u_v1/presentation/staff/manage_system_user_page.dart';
 import 'package:travel2u_v1/presentation/staff/manage_taxonomy_page.dart';
 import 'package:travel2u_v1/presentation/staff/manage_travel_page.dart';
 import 'package:travel2u_v1/presentation/widgets/custom_message_popup.dart';
@@ -220,7 +221,11 @@ class SDashboardPage extends StatelessWidget {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => const ManageActivityPage(),
+                                builder:
+                                    (_) => ManageUserPage(
+                                      userId: userId,
+                                      role: role,
+                                    ),
                               ),
                             );
                           },
