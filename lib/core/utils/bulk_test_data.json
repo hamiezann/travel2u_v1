@@ -1,0 +1,266 @@
+[
+  {
+    "id": "pkg_kl_urban",
+    "name": "KL Urban Explorer",
+    "destination": "Kuala Lumpur, Malaysia",
+    "duration": 3,
+    "price": 499.0,
+    "flightClass": "Air Asia",
+    "foodTypes": ["Local Cuisine", "Street Food", "Halal/kosher"],
+    "tags": ["Budget Friendly", "Weekend Getaway", "Hidden Gems"],
+    "activityPool": [
+      {
+        "id": "act_pavilion",
+        "name": "Pavilion Walk & Street Market",
+        "type": "City Sightseeing",
+        "foodType": ["Street Food"],
+        "duration": "2"
+      },
+      {
+        "id": "act_batu",
+        "name": "Batu Caves Cultural Tour",
+        "type": "Cultural Immersion",
+        "foodType": ["Local Cuisine"],
+        "duration": "3"
+      },
+      {
+        "id": "act_klcc",
+        "name": "KLCC Park Evening Walk",
+        "type": "Outdoor",
+        "foodType": [""],
+        "duration": "1"
+      }
+    ]
+  },
+  {
+    "id": "pkg_lkwi_beach",
+    "name": "Langkawi Beach & Water Adventure",
+    "destination": "Langkawi, Malaysia",
+    "duration": 4,
+    "price": 1299.0,
+    "flightClass": "Mas Airlines",
+    "foodTypes": ["Seafood", "Local Cuisine"],
+    "tags": ["Family Friendly", "Weekend Getaway"],
+    "activityPool": [
+      {
+        "id": "act_islandhop",
+        "name": "Island Hopping",
+        "type": "Water Sports",
+        "foodType": [""],
+        "duration": "4"
+      },
+      {
+        "id": "act_skydining",
+        "name": "SkyCab & SkyBridge Experience",
+        "type": "Outdoor",
+        "foodType": [""],
+        "duration": "3"
+      },
+      {
+        "id": "act_glassboat",
+        "name": "Glass Boat Wildlife Tour",
+        "type": "Wildlife Safari",
+        "foodType": [""],
+        "duration": "2"
+      }
+    ]
+  },
+  {
+    "id": "pkg_borneo_forest",
+    "name": "Borneo Rainforest Expedition",
+    "destination": "Sabah, Malaysia",
+    "duration": 5,
+    "price": 1999.0,
+    "flightClass": "Malindo Air",
+    "foodTypes": ["Farm To Table", "Local Cuisine"],
+    "tags": ["Hidden Gems", "Adventure", "Solo Travel"],
+    "activityPool": [
+      {
+        "id": "act_jungle",
+        "name": "Jungle Trekking & Waterfall",
+        "type": "Hiking & Trekking",
+        "foodType": ["Local Cuisine"],
+        "duration": "6"
+      },
+      {
+        "id": "act_orangutan",
+        "name": "Orangutan Sanctuary Visit",
+        "type": "Wildlife Safari",
+        "foodType": [""],
+        "duration": "3"
+      },
+      {
+        "id": "act_lodgestay",
+        "name": "Eco Lodge Forest Stay",
+        "type": "Ecotourism",
+        "foodType": ["Farm To Table"],
+        "duration": "24"
+      }
+    ]
+  },
+  {
+    "id": "pkg_penang_food",
+    "name": "Penang Heritage & Food Trail",
+    "destination": "Penang, Malaysia",
+    "duration": 3,
+    "price": 899.0,
+    "flightClass": "Baby Airline",
+    "foodTypes": ["Local Cuisine", "Street Food", "Fine Dining"],
+    "tags": ["Family Friendly", "Hidden Gems", "Budget Friendly"],
+    "activityPool": [
+      {
+        "id": "act_streetfood",
+        "name": "Gurney Drive Food Hunt",
+        "type": "Cultural Immersion",
+        "foodType": ["Street Food"],
+        "duration": "3"
+      },
+      {
+        "id": "act_heritage",
+        "name": "Georgetown Heritage Walk",
+        "type": "Historical Sites",
+        "foodType": [""],
+        "duration": "2"
+      },
+      {
+        "id": "act_mural",
+        "name": "Street Art Tour",
+        "type": "City Sightseeing",
+        "foodType": [""],
+        "duration": "1"
+      }
+    ]
+  },
+  {
+    "id": "pkg_bali_extreme",
+    "name": "Bali Extreme Adventure",
+    "destination": "Bali, Indonesia",
+    "duration": 5,
+    "price": 2699.0,
+    "flightClass": "Mas Airlines",
+    "foodTypes": ["Seafood", "Local Cuisine", "Vegan"],
+    "tags": ["Extreme", "Adventure", "Solo Travel"],
+    "activityPool": [
+      {
+        "id": "act_atv",
+        "name": "ATV Jungle Ride",
+        "type": "Extreme",
+        "foodType": [""],
+        "duration": "2"
+      },
+      {
+        "id": "act_diving",
+        "name": "Deep Sea Diving",
+        "type": "Water Sports",
+        "foodType": [""],
+        "duration": "4"
+      },
+      {
+        "id": "act_volcano",
+        "name": "Mount Batur Hike",
+        "type": "Hiking & Trekking",
+        "foodType": [""],
+        "duration": "6"
+      }
+    ]
+  },
+  {
+    "id": "pkg_japan_culture",
+    "name": "Japan Cultural Immersion",
+    "destination": "Kyoto, Japan",
+    "duration": 6,
+    "price": 3999.0,
+    "flightClass": "Mas Airlines",
+    "foodTypes": ["Fine Dining", "Vegan", "Local Cuisine"],
+    "tags": ["Luxury", "Honeymoon", "Cultural Immersion"],
+    "activityPool": [
+      {
+        "id": "act_teaceremony",
+        "name": "Traditional Tea Ceremony",
+        "type": "Cultural Immersion",
+        "foodType": [""],
+        "duration": "2"
+      },
+      {
+        "id": "act_temple",
+        "name": "Fushimi Inari Shrine Tour",
+        "type": "Historical Sites",
+        "foodType": [""],
+        "duration": "4"
+      },
+      {
+        "id": "act_bamboo",
+        "name": "Arashiyama Bamboo Forest Walk",
+        "type": "Outdoor",
+        "foodType": ["Vegan"],
+        "duration": "3"
+      }
+    ]
+  },
+  {
+    "id": "pkg_maldives_honey",
+    "name": "Maldives Honeymoon Retreat",
+    "destination": "Maldives",
+    "duration": 4,
+    "price": 4999.0,
+    "flightClass": "Mas Airlines",
+    "foodTypes": ["Seafood", "Fine Dining"],
+    "tags": ["Luxury", "Honeymoon"],
+    "activityPool": [
+      {
+        "id": "act_spa",
+        "name": "Couple Spa",
+        "type": "Santai",
+        "foodType": [""],
+        "duration": "2"
+      },
+      {
+        "id": "act_cruise",
+        "name": "Sunset Cruise",
+        "type": "Cruises",
+        "foodType": [""],
+        "duration": "3"
+      },
+      {
+        "id": "act_diving2",
+        "name": "Coral Reef Snorkeling",
+        "type": "Water Sports",
+        "foodType": [""],
+        "duration": "2"
+      }
+    ]
+  },
+  {
+    "id": "pkg_th_streetfood",
+    "name": "Thailand Street Food Rampage",
+    "destination": "Bangkok, Thailand",
+    "duration": 3,
+    "price": 799.0,
+    "flightClass": "Air Asia",
+    "foodTypes": ["Street Food", "Halal/kosher", "Local Cuisine"],
+    "tags": ["Budget Friendly", "Solo Travel"],
+    "activityPool": [
+      {
+        "id": "act_chatuchak",
+        "name": "Chatuchak Market Food Hunt",
+        "type": "City Sightseeing",
+        "foodType": ["Street Food"],
+        "duration": "4"
+      },
+      {
+        "id": "act_boat",
+        "name": "Floating Market Tour",
+        "type": "Cultural Immersion",
+        "foodType": [""],
+        "duration": "3"
+      },
+      {
+        "id": "act_temple2",
+        "name": "Wat Arun Temple Tour",
+        "type": "Historical Sites",
+        "foodType": [""],
+        "duration": "2"
+      }
+    ]
+  }
+]

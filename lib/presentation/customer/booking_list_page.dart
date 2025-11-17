@@ -1,5 +1,9 @@
-// 2. My Trips - View Bookings & Submit Feedback
+import 'dart:ui';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:travel2u_v1/presentation/customer/booking_detail_page.dart';
 
 class MyTripsPage extends StatefulWidget {
   const MyTripsPage({super.key});
@@ -9,6 +13,25 @@ class MyTripsPage extends StatefulWidget {
 }
 
 class _MyTripsPageState extends State<MyTripsPage> {
+  final String uid = FirebaseAuth.instance.currentUser!.uid;
+
+  Future<Map<String, dynamic>?> _fetchPackageDetails(String packageId) async {
+    try {
+      final doc =
+          await FirebaseFirestore.instance
+              .collection("travel_packages")
+              .doc(packageId)
+              .get();
+
+      if (!doc.exists) return null;
+
+      return doc.data();
+    } catch (e) {
+      print("❌ Error fetching package details: $e");
+      return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
@@ -26,8 +49,8 @@ class _MyTripsPageState extends State<MyTripsPage> {
           Expanded(
             child: TabBarView(
               children: [
-                _buildUpcomingTrips(context),
-                _buildCompletedTrips(context),
+                _buildTrips(context, completed: false),
+                _buildTrips(context, completed: true),
               ],
             ),
           ),
@@ -36,155 +59,176 @@ class _MyTripsPageState extends State<MyTripsPage> {
     );
   }
 
-  Widget _buildUpcomingTrips(BuildContext context) {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: 3,
-      itemBuilder: (context, index) {
-        return Card(
-          margin: const EdgeInsets.only(bottom: 16),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Trip ${index + 1}',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.green[100],
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Text(
-                        'Confirmed',
-                        style: TextStyle(
-                          color: Colors.green,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.calendar_today,
-                      size: 16,
-                      color: Colors.grey,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Nov ${15 + index * 5}, 2025',
-                      style: TextStyle(color: Colors.grey[600]),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.access_time,
-                      size: 16,
-                      color: Colors.orange,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '${30 - index * 10} days left',
-                      style: const TextStyle(color: Colors.orange),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Trip update: Your booking is confirmed. Check your itinerary for details.',
-                  style: TextStyle(color: Colors.grey[700]),
-                ),
-              ],
+  /// Fetch all bookings and filter in UI
+  Widget _buildTrips(BuildContext context, {required bool completed}) {
+    return StreamBuilder(
+      stream:
+          FirebaseFirestore.instance
+              .collection('bookings')
+              .where('userId', isEqualTo: uid)
+              .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final docs = snapshot.data!.docs;
+
+        // Convert Firestore docs to usable maps
+        final trips = docs.map((d) => d.data()).toList();
+
+        // Split by complete or upcoming
+        final now = DateTime.now();
+
+        final filtered =
+            trips.where((trip) {
+              final status = trip['status'] ?? "";
+              final date = DateTime.tryParse(trip['travelDate'] ?? "") ?? now;
+
+              if (completed) {
+                return status == "completed";
+              } else {
+                return status !=
+                    "completed"; // includes empty, pending, generated
+              }
+            }).toList();
+
+        if (filtered.isEmpty) {
+          return Center(
+            child: Text(
+              completed ? "No completed trips yet." : "No upcoming trips.",
+              style: const TextStyle(fontSize: 16, color: Colors.grey),
             ),
-          ),
+          );
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.fromLTRB(4, 2, 4, 0),
+          itemCount: filtered.length,
+          itemBuilder: (context, index) {
+            final trip = filtered[index];
+            return _buildTripCard(context, trip, completed);
+          },
         );
       },
     );
   }
 
-  Widget _buildCompletedTrips(BuildContext context) {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: 5,
-      itemBuilder: (context, index) {
-        return Card(
-          margin: const EdgeInsets.only(bottom: 16),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildTripCard(
+    BuildContext context,
+    Map<String, dynamic> trip,
+    bool completed,
+  ) {
+    final travelDate = DateTime.tryParse(trip['travelDate'] ?? "");
+    final now = DateTime.now();
+    int daysLeft = travelDate != null ? travelDate.difference(now).inDays : 0;
+
+    final packageId = trip["packageId"] ?? "";
+    final status = trip["itineraryStatus"] ?? "";
+
+    return FutureBuilder(
+      future: _fetchPackageDetails(packageId),
+      builder: (context, snapshot) {
+        final pkg = snapshot.data;
+
+        final imageUrl = pkg?["imageUrl"] ?? "";
+        final packageName = pkg?["name"] ?? "Unknown Package";
+        final destination = pkg?["destination"] ?? "Unknown";
+
+        return InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder:
+                    (_) =>
+                        BookingDetailPage(packageData: pkg!, bookingData: trip),
+              ),
+            );
+          },
+          child: Container(
+            height: 100,
+            margin: const EdgeInsets.only(bottom: 2),
+            decoration: BoxDecoration(
+              // borderRadius: BorderRadius.circular(16),
+              image: DecorationImage(
+                image: NetworkImage(imageUrl),
+                fit: BoxFit.cover,
+              ),
+            ),
+            child: Stack(
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Trip ${index + 1}',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                // dark overlay for readable text
+                Container(
+                  decoration: BoxDecoration(
+                    // borderRadius: BorderRadius.circular(16),
+                    color: Colors.black.withOpacity(0.3),
+                  ),
+                ),
+
+                // CONTENT OVERLAY
+                Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // LEFT: DAY COUNT
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            daysLeft >= 0 ? "$daysLeft" : "${daysLeft.abs()}",
+                            style: const TextStyle(
+                              fontSize: 30,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          Text(
+                            completed ? "Days Ago" : "Days Left",
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.white70,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.blue[100],
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Text(
-                        'Completed',
-                        style: TextStyle(
-                          color: Colors.blue,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
+
+                      const SizedBox(width: 20),
+
+                      // RIGHT: DESTINATION + DATE
+                      Expanded(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              destination,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              travelDate != null
+                                  ? DateFormat(
+                                    'EEEE, MMMM d',
+                                  ).format(travelDate.toLocal())
+                                  : "Unknown Date",
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.white70,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.calendar_today,
-                      size: 16,
-                      color: Colors.grey,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Sep ${10 + index * 5}, 2025',
-                      style: TextStyle(color: Colors.grey[600]),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () => _showFeedbackDialog(context, index),
-                    icon: const Icon(Icons.rate_review),
-                    label: const Text('Submit Feedback'),
+                    ],
                   ),
                 ),
               ],
@@ -195,29 +239,29 @@ class _MyTripsPageState extends State<MyTripsPage> {
     );
   }
 
-  void _showFeedbackDialog(BuildContext context, int tripIndex) {
-    final ratingController = TextEditingController();
-    final commentsController = TextEditingController();
+  void _showFeedbackDialog(BuildContext context, Map trip) {
+    final rating = TextEditingController();
+    final comments = TextEditingController();
 
     showDialog(
       context: context,
       builder:
-          (context) => AlertDialog(
+          (c) => AlertDialog(
             title: const Text('Submit Feedback'),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextField(
-                  controller: ratingController,
+                  controller: rating,
                   decoration: const InputDecoration(
-                    labelText: 'Rating (1-5)',
+                    labelText: 'Rating (1–5)',
                     border: OutlineInputBorder(),
                   ),
                   keyboardType: TextInputType.number,
                 ),
                 const SizedBox(height: 12),
                 TextField(
-                  controller: commentsController,
+                  controller: comments,
                   decoration: const InputDecoration(
                     labelText: 'Comments',
                     border: OutlineInputBorder(),
@@ -228,16 +272,15 @@ class _MyTripsPageState extends State<MyTripsPage> {
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: () => Navigator.pop(c),
                 child: const Text('Cancel'),
               ),
               ElevatedButton(
                 onPressed: () {
-                  Navigator.pop(context);
+                  // TODO save feedback to Firestore
+                  Navigator.pop(c);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Feedback submitted successfully!'),
-                    ),
+                    const SnackBar(content: Text('Feedback submitted!')),
                   );
                 },
                 child: const Text('Submit'),

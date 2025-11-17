@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:travel2u_v1/presentation/auth/login.dart';
 import 'package:travel2u_v1/presentation/auth/register.dart';
+import 'package:travel2u_v1/presentation/customer/booking_index_page.dart';
 import 'package:travel2u_v1/presentation/customer/cdashboard.dart';
 import 'package:travel2u_v1/presentation/staff/createOrEdit_travel_package.dart';
 import 'package:travel2u_v1/presentation/staff/crud_taxonomy.dart';
@@ -17,6 +18,7 @@ class AppRoute {
   static const String addTravelPackage = '/add-travel-package';
   static const String editTravelPackage = '/update-travel-package';
   static const String crudTaxonomy = '/crud-taxonomy';
+  static const String bookingPage = '/booking-page';
 
   static Map<String, WidgetBuilder> routes = {
     login: (context) => const LoginPage(),
@@ -28,9 +30,7 @@ class AppRoute {
     editTravelPackage: (context) {
       final args =
           ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>;
-      // print('Navigating to /update-travel-package with arguments: $args');
       final String? packageId = args['id'] as String?;
-      // print('Extracted packageId: $packageId');
       return CreateOrEditTravelPackagePage(packageId: packageId);
     },
     crudTaxonomy: (context) {
@@ -38,6 +38,12 @@ class AppRoute {
           ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
       final taxonomyType = args['taxonomyType'] as String;
       return CrudTaxonomyPage(taxonomyType: taxonomyType);
+    },
+    bookingPage: (context) {
+      final args =
+          ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+      final String packageId = args['packageId'] as String;
+      return BookingPage(packageId: packageId);
     },
   };
 }

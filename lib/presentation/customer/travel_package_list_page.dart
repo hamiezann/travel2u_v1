@@ -60,7 +60,8 @@ class _PackagesPageState extends State<PackagesPage> {
           allDocs
               .map(
                 (doc) =>
-                    TravelPackage.fromJson(doc.data() as Map<String, dynamic>),
+                // TravelPackage.fromJson(doc.data() as Map<String, dynamic>),
+                TravelPackage.fromJson(doc.data()),
               )
               .toList();
       if (mounted) {
@@ -444,7 +445,7 @@ class _PackagesPageState extends State<PackagesPage> {
                           elevation: 0,
                         ),
                         child: const Text(
-                          'Book Now',
+                          'Trip Details',
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
@@ -481,103 +482,6 @@ class _PackagesPageState extends State<PackagesPage> {
           color: Colors.white.withOpacity(0.5),
         ),
       ),
-    );
-  }
-
-  void _showBookingDialog(BuildContext context, int packageIndex) {
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            title: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE8F4FD),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    Icons.card_travel,
-                    color: Color(0xFF0064D2),
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Text(
-                    'Confirm Booking',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-                  ),
-                ),
-              ],
-            ),
-            content: Text(
-              'Are you sure you want to book "${packageList[packageIndex].name}"?',
-              style: const TextStyle(fontSize: 14, color: Color(0xFF687089)),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text(
-                  'Cancel',
-                  style: TextStyle(
-                    color: Color(0xFF687089),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Row(
-                        children: [
-                          const Icon(Icons.check_circle, color: Colors.white),
-                          const SizedBox(width: 12),
-                          const Expanded(
-                            child: Text(
-                              'Booking successful!',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      backgroundColor: const Color(0xFF28A745),
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      margin: const EdgeInsets.all(16),
-                    ),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0064D2),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
-                  ),
-                ),
-                child: const Text(
-                  'Confirm',
-                  style: TextStyle(fontWeight: FontWeight.w600),
-                ),
-              ),
-            ],
-          ),
     );
   }
 }

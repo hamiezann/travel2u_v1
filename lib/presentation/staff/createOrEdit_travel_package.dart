@@ -12,7 +12,6 @@ import 'package:travel2u_v1/presentation/widgets/custom_step_indicator.dart';
 
 class CreateOrEditTravelPackagePage extends StatefulWidget {
   final String? packageId;
-  // const AddTravelPackagePage({Key? key}) : super(key: key);
   const CreateOrEditTravelPackagePage({super.key, this.packageId});
 
   @override
@@ -143,7 +142,7 @@ class _CreateOrEditTravelPackagePageState
 
       if (doc.exists) {
         final data = doc.data();
-        debugPrint('Fetched data: ${doc.data()}');
+        // debugPrint('Fetched data: ${doc.data()}');
 
         if (data != null) {
           setState(() {

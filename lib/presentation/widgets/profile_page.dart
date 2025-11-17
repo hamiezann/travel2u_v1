@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:travel2u_v1/presentation/widgets/custom_card.dart';
-import 'package:travel2u_v1/presentation/widgets/custom_dropdown.dart';
 import 'package:travel2u_v1/presentation/widgets/custom_textfield.dart';
 
 class UserProfile {

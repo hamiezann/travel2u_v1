@@ -1,0 +1,178 @@
+[
+  {
+    "id": "pkg_kl_urban",
+    "name": "KL Urban Explorer",
+    "destination": "Kuala Lumpur, Malaysia",
+    "duration": 3,
+    "price": 499.0,
+    "imageUrl": "https://example.com/images/pkg_kl_urban.jpg",
+    "tourGuide": "John Doe",
+    "flightDetail": "Air Asia",
+    "flightClass": "Air Asia",
+    "hotelDetail": "KL City Hotel",
+    "hotelRating": "4 Star",
+    "tags": ["Budget Friendly", "Weekend Getaway", "Hidden Gems"],
+    "activityPool": [
+      {
+        "id": "act_pavilion",
+        "name": "Pavilion Walk & Street Market",
+        "type": "City Sightseeing",
+        "duration": "2",
+        "location": "Bukit Bintang",
+        "foodType": ["Street Food"],
+        "day": 1
+      },
+      {
+        "id": "act_batu",
+        "name": "Batu Caves Cultural Tour",
+        "type": "Cultural Immersion",
+        "duration": "3",
+        "location": "Batu Caves",
+        "foodType": ["Local Cuisine"],
+        "day": 2
+      },
+      {
+        "id": "act_klcc",
+        "name": "KLCC Park Evening Walk",
+        "type": "Outdoor",
+        "duration": "1",
+        "location": "KLCC",
+        "foodType": [],
+        "day": 3
+      }
+    ],
+    "activitiesByDay": [
+      [
+        {
+          "id": "act_pavilion",
+          "name": "Pavilion Walk & Street Market",
+          "type": "City Sightseeing",
+          "duration": "2",
+          "location": "Bukit Bintang",
+          "foodType": ["Street Food"],
+          "day": 1
+        }
+      ],
+      [
+        {
+          "id": "act_batu",
+          "name": "Batu Caves Cultural Tour",
+          "type": "Cultural Immersion",
+          "duration": "3",
+          "location": "Batu Caves",
+          "foodType": ["Local Cuisine"],
+          "day": 2
+        }
+      ],
+      [
+        {
+          "id": "act_klcc",
+          "name": "KLCC Park Evening Walk",
+          "type": "Outdoor",
+          "duration": "1",
+          "location": "KLCC",
+          "foodType": [],
+          "day": 3
+        }
+      ]
+    ]
+  },
+  {
+    "id": "pkg_bali_extreme",
+    "name": "Bali Extreme Adventure",
+    "destination": "Bali, Indonesia",
+    "duration": 4,
+    "price": 2699.0,
+    "imageUrl": "https://example.com/images/pkg_bali_extreme.jpg",
+    "tourGuide": "Jane Smith",
+    "flightDetail": "Mas Airlines",
+    "flightClass": "Mas Airlines",
+    "hotelDetail": "Bali Adventure Resort",
+    "hotelRating": "5 Star",
+    "tags": ["Extreme", "Adventure", "Solo Travel"],
+    "activityPool": [
+      {
+        "id": "act_atv",
+        "name": "ATV Jungle Ride",
+        "type": "Extreme",
+        "duration": "2",
+        "location": "Ubud",
+        "foodType": [],
+        "day": 1
+      },
+      {
+        "id": "act_diving",
+        "name": "Deep Sea Diving",
+        "type": "Water Sports",
+        "duration": "4",
+        "location": "Nusa Penida",
+        "foodType": ["Seafood"],
+        "day": 2
+      },
+      {
+        "id": "act_volcano",
+        "name": "Mount Batur Hike",
+        "type": "Hiking & Trekking",
+        "duration": "6",
+        "location": "Mount Batur",
+        "foodType": [],
+        "day": 3
+      },
+      {
+        "id": "act_beach",
+        "name": "Relaxing at Kuta Beach",
+        "type": "Santai",
+        "duration": "3",
+        "location": "Kuta",
+        "foodType": ["Vegan"],
+        "day": 4
+      }
+    ],
+    "activitiesByDay": [
+      [
+        {
+          "id": "act_atv",
+          "name": "ATV Jungle Ride",
+          "type": "Extreme",
+          "duration": "2",
+          "location": "Ubud",
+          "foodType": [],
+          "day": 1
+        }
+      ],
+      [
+        {
+          "id": "act_diving",
+          "name": "Deep Sea Diving",
+          "type": "Water Sports",
+          "duration": "4",
+          "location": "Nusa Penida",
+          "foodType": ["Seafood"],
+          "day": 2
+        }
+      ],
+      [
+        {
+          "id": "act_volcano",
+          "name": "Mount Batur Hike",
+          "type": "Hiking & Trekking",
+          "duration": "6",
+          "location": "Mount Batur",
+          "foodType": [],
+          "day": 3
+        }
+      ],
+      [
+        {
+          "id": "act_beach",
+          "name": "Relaxing at Kuta Beach",
+          "type": "Santai",
+          "duration": "3",
+          "location": "Kuta",
+          "foodType": ["Vegan"],
+          "day": 4
+        }
+      ]
+    ]
+  }
+]

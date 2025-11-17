@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:travel2u_v1/core/services/auth_service.dart';
 import 'package:travel2u_v1/presentation/auth/change_email_password_page.dart';
 import 'package:travel2u_v1/presentation/customer/booking_list_page.dart';
-import 'package:travel2u_v1/presentation/customer/itinerary_list_page.dart';
 import 'package:travel2u_v1/presentation/customer/travel_package_list_page.dart';
 import 'package:travel2u_v1/presentation/widgets/custom_message_popup.dart';
 import 'package:travel2u_v1/presentation/widgets/profile_page.dart';
@@ -97,7 +96,7 @@ class _CDashboardPageState extends State<CDashboardPage> {
     }
 
     if (index == 1) return MyTripsPage();
-    if (index == 2) return ItinerariesPage();
+    // if (index == 2) return ItinerariesPage();
 
     return PackagesPage();
   }
@@ -145,6 +144,17 @@ class _CDashboardPageState extends State<CDashboardPage> {
                       value: 2,
                       child: ListTile(
                         leading: Icon(
+                          Icons.shopping_cart_outlined,
+                          color: Colors.blue,
+                        ),
+                        title: Text('My Cart'),
+                      ),
+                    ),
+                    PopupMenuDivider(),
+                    PopupMenuItem<int>(
+                      value: 3,
+                      child: ListTile(
+                        leading: Icon(
                           Icons.security_outlined,
                           color: Colors.blue,
                         ),
@@ -159,6 +169,13 @@ class _CDashboardPageState extends State<CDashboardPage> {
                     MaterialPageRoute(builder: (_) => ProfilePage()),
                   );
                 } else if (value == 2) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ChangeAuthenticationPage(),
+                    ),
+                  );
+                } else if (value == 3) {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -231,7 +248,8 @@ class _CDashboardPageState extends State<CDashboardPage> {
       extendBody: true,
       body: _getPage(_selectedIndex),
       bottomNavigationBar: Container(
-        margin: const EdgeInsets.all(18),
+        width: double.minPositive,
+        margin: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           color: Colors.white.withOpacity(0.9),
           borderRadius: BorderRadius.circular(30),
@@ -261,9 +279,10 @@ class _CDashboardPageState extends State<CDashboardPage> {
               }
               setState(() => _selectedIndex = index);
             },
-            backgroundColor: Colors.blue.shade50,
-            selectedItemColor: Colors.blue.shade900,
-            unselectedItemColor: Colors.blue.shade300,
+            // backgroundColor: Colors.blue.shade50,
+            backgroundColor: Colors.white,
+            selectedItemColor: Colors.blue,
+            unselectedItemColor: Colors.blue.shade200,
             selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
             items: const [
               BottomNavigationBarItem(
@@ -274,10 +293,10 @@ class _CDashboardPageState extends State<CDashboardPage> {
                 icon: Icon(Icons.card_travel),
                 label: 'My Trips',
               ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.map),
-                label: 'Itineraries',
-              ),
+              // BottomNavigationBarItem(
+              //   icon: Icon(Icons.map),
+              //   label: 'Itineraries',
+              // ),
             ],
           ),
         ),

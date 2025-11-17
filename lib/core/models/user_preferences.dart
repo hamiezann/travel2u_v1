@@ -2,13 +2,15 @@ class UserPreferences {
   final String userId;
   final List<String> preferredActivities;
   final List<String> foodPreference;
-  final String travelPace; // e.g. relax, adventure
+  final List<String> avoidPreference;
+  // final String travelPace; // e.g. relax, adventure
 
   UserPreferences({
     required this.userId,
     required this.preferredActivities,
     required this.foodPreference,
-    required this.travelPace,
+    required this.avoidPreference,
+    // required this.travelPace,
   });
 
   factory UserPreferences.fromJson(Map<String, dynamic> json) {
@@ -16,7 +18,8 @@ class UserPreferences {
       userId: json['userId'],
       preferredActivities: List<String>.from(json['preferredActivities'] ?? []),
       foodPreference: List<String>.from(json['foodPreference'] ?? []),
-      travelPace: json['travelPace'],
+      avoidPreference: List<String>.from(json['avoidPreference'] ?? []),
+      // travelPace: json['travelPace'],
     );
   }
 
@@ -24,6 +27,7 @@ class UserPreferences {
     'userId': userId,
     'preferredActivities': preferredActivities,
     'foodPreference': foodPreference,
-    'travelPace': travelPace,
+    'avoidPreference': avoidPreference,
+    // 'travelPace': travelPace,
   };
 }
