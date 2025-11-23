@@ -1,5 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:multi_select_flutter/chip_display/multi_select_chip_display.dart';
+import 'package:multi_select_flutter/dialog/multi_select_dialog_field.dart';
+import 'package:multi_select_flutter/util/multi_select_item.dart';
 
 class EditItineraryPage extends StatefulWidget {
   final String itineraryId;
@@ -20,6 +23,8 @@ class _EditItineraryPageState extends State<EditItineraryPage> {
   String selectedStatus = "pending";
   List<String> _foodTypesList = [];
   List<String> _activityTypesList = [];
+  List<String> _selectedFoodTypes = [];
+  String? _selectedActivityType;
 
   @override
   void initState() {
@@ -494,7 +499,6 @@ class _EditItineraryPageState extends State<EditItineraryPage> {
   // -------------------------
   void _showActivityDialog({required int dayIndex, int? activityIndex}) {
     final isEdit = activityIndex != null;
-
     final Map<String, dynamic> activity =
         isEdit
             ? days[dayIndex]["activities"][activityIndex]
@@ -506,7 +510,9 @@ class _EditItineraryPageState extends State<EditItineraryPage> {
               "foodType": [],
               "id": "",
             };
-
+    _selectedActivityType = isEdit ? activity["type"] : null;
+    _selectedFoodTypes =
+        isEdit ? List<String>.from(activity["foodType"] ?? []) : [];
     final nameCtrl = TextEditingController(text: activity["name"]);
     final durationCtrl = TextEditingController(text: activity["duration"]);
     final locationCtrl = TextEditingController(text: activity["location"]);
@@ -514,11 +520,11 @@ class _EditItineraryPageState extends State<EditItineraryPage> {
     final foodCtrl = TextEditingController(
       text: activity["foodType"]?.join(", ") ?? "",
     );
-
     showDialog(
       context: context,
       builder:
           (context) => AlertDialog(
+            backgroundColor: Colors.white,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
@@ -537,16 +543,63 @@ class _EditItineraryPageState extends State<EditItineraryPage> {
                   const SizedBox(height: 12),
                   _textField(locationCtrl, "Location", Icons.place),
                   const SizedBox(height: 12),
-                  _textField(
-                    typeCtrl,
-                    "Type (e.g., Sightseeing)",
-                    Icons.category,
+                  // _textField(
+                  //   typeCtrl,
+                  //   "Type (e.g., Sightseeing)",
+                  //   Icons.category,
+                  // ),
+                  // const SizedBox(height: 12),
+                  // _textField(
+                  //   foodCtrl,
+                  //   "Food Types (comma separated)",
+                  //   Icons.restaurant,
+                  // ),
+                  // Activity Type (single select)
+                  DropdownButtonFormField<String>(
+                    value:
+                        (_selectedActivityType != null &&
+                                _activityTypesList.contains(
+                                  _selectedActivityType,
+                                ))
+                            ? _selectedActivityType
+                            : null,
+                    items:
+                        _activityTypesList.map((type) {
+                          return DropdownMenuItem(
+                            value: type,
+                            child: Text(type),
+                          );
+                        }).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedActivityType = value;
+                      });
+                    },
+                    decoration: _inputDecoration("Select activity type"),
                   ),
+
                   const SizedBox(height: 12),
-                  _textField(
-                    foodCtrl,
-                    "Food Types (comma separated)",
-                    Icons.restaurant,
+
+                  // Food Types (multi-select)
+                  MultiSelectDialogField<String>(
+                    items:
+                        _foodTypesList
+                            .map((food) => MultiSelectItem(food, food))
+                            .toList(),
+                    initialValue: List<String>.from(activity["foodType"] ?? []),
+                    title: const Text("Food Types"),
+                    buttonText: const Text("Select Food Types"),
+                    searchable: true,
+                    onConfirm: (values) {
+                      _selectedFoodTypes = values;
+                    },
+                    chipDisplay: MultiSelectChipDisplay(
+                      onTap: (value) {
+                        setState(() {
+                          _selectedFoodTypes.remove(value);
+                        });
+                      },
+                    ),
                   ),
                 ],
               ),
@@ -577,9 +630,11 @@ class _EditItineraryPageState extends State<EditItineraryPage> {
                     "name": nameCtrl.text,
                     "duration": durationCtrl.text,
                     "location": locationCtrl.text,
-                    "type": typeCtrl.text,
-                    "foodType":
-                        foodCtrl.text.split(",").map((e) => e.trim()).toList(),
+                    // "type": typeCtrl.text,
+                    // "foodType":
+                    //     foodCtrl.text.split(",").map((e) => e.trim()).toList(),
+                    "type": _selectedActivityType ?? typeCtrl.text,
+                    "foodType": _selectedFoodTypes,
                     "day": dayIndex + 1,
                     "id":
                         activity["id"] ??

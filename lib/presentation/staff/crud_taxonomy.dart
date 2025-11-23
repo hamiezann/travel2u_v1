@@ -16,7 +16,7 @@ class _CrudTaxonomyPageState extends State<CrudTaxonomyPage> {
 
   // 🔑 Staff Brand Color
   // static const Color _staffColor = Colors.teal;
-  static const _staffColor = Colors.teal;
+  static const _staffColor = Colors.blue;
 
   // Helper to format the title nicely
   String get _formattedTitle {

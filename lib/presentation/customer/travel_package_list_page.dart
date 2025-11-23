@@ -107,8 +107,6 @@ class _PackagesPageState extends State<PackagesPage> {
 
     if (docSnapshot.exists) {
       final data = docSnapshot.data() as Map<String, dynamic>?;
-
-      // assuming field in firestore is { tags: ["Weekend Getaway", ...] }
       tagsList = List<String>.from(data?['values'] ?? []);
     } else {
       tagsList = [];

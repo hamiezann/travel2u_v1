@@ -28,7 +28,7 @@ class _ManageActivityPageState extends State<ManageActivityPage> {
           "Manage Bookings",
           style: TextStyle(color: Colors.white),
         ),
-        backgroundColor: Colors.teal,
+        backgroundColor: Colors.blue,
         elevation: 0,
       ),
       body: Column(
@@ -291,11 +291,14 @@ class _ManageActivityPageState extends State<ManageActivityPage> {
                                     const SizedBox(width: 8),
                                     Expanded(
                                       child: ElevatedButton.icon(
-                                        icon: const Icon(
-                                          Icons.update,
-                                          size: 14,
+                                        // icon: const Icon(
+                                        //   Icons.update,
+                                        //   size: 12,
+                                        // ),
+                                        label: const Text(
+                                          "Status",
+                                          style: TextStyle(fontSize: 14),
                                         ),
-                                        label: const Text("Status"),
                                         onPressed:
                                             () => _updateStatus(
                                               context,
@@ -335,7 +338,7 @@ class _ManageActivityPageState extends State<ManageActivityPage> {
         setState(() => _filter = value);
       },
       backgroundColor: Colors.grey[200],
-      selectedColor: Colors.teal,
+      selectedColor: Colors.blue,
       labelStyle: TextStyle(
         color: isSelected ? Colors.white : Colors.black87,
         fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
@@ -371,7 +374,7 @@ class _ManageActivityPageState extends State<ManageActivityPage> {
                 item.toString(),
                 style: const TextStyle(fontSize: 12),
               ),
-              backgroundColor: Colors.teal[50],
+              backgroundColor: Colors.blue[50],
               padding: EdgeInsets.zero,
               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),

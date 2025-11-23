@@ -32,8 +32,8 @@ class _ChatPageState extends State<ChatPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text("Chat with Support"),
-        backgroundColor: Colors.teal,
+        title: Text("Chat with Support", style: TextStyle(color: Colors.white)),
+        backgroundColor: Colors.blue,
       ),
       body: Column(
         children: [
@@ -96,7 +96,7 @@ class _ChatPageState extends State<ChatPage> {
                   ),
                 ),
                 IconButton(
-                  icon: Icon(Icons.send, color: Colors.teal),
+                  icon: Icon(Icons.send, color: Colors.blue),
                   onPressed: () async {
                     if (_msgController.text.trim().isEmpty) return;
 

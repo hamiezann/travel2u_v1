@@ -5,8 +5,7 @@ class ManageTaxonomyPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Staff Brand Color
-    const staffColor = Colors.teal;
+    const staffColor = Colors.blue;
 
     // List of Taxonomy Items for easier iteration and styling
     final List<Map<String, dynamic>> taxonomies = [

@@ -17,7 +17,8 @@ class _ManageUserPageState extends State<ManageUserPage>
   final Map<String, dynamic> customerList = {};
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   bool _isLoading = true;
-
+  static final staffColor = Colors.blue;
+  // static final adminColor = staffColor;
   TabController? _tabController;
 
   @override
@@ -95,7 +96,7 @@ class _ManageUserPageState extends State<ManageUserPage>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError ? Colors.red.shade700 : Colors.blue.shade900,
+        backgroundColor: isError ? Colors.red.shade700 : staffColor,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
@@ -184,7 +185,7 @@ class _ManageUserPageState extends State<ManageUserPage>
               children: [
                 Icon(
                   userId == null ? Icons.person_add : Icons.edit,
-                  color: Colors.blue.shade900,
+                  color: staffColor,
                 ),
                 const SizedBox(width: 8),
                 Text(userId == null ? 'Add User' : 'Edit User'),
@@ -336,7 +337,7 @@ class _ManageUserPageState extends State<ManageUserPage>
                   }
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue.shade900,
+                  backgroundColor: staffColor,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -360,16 +361,16 @@ class _ManageUserPageState extends State<ManageUserPage>
           'Manage Users',
           style: TextStyle(color: Colors.white),
         ),
-        backgroundColor: Colors.blue.shade900,
+        backgroundColor: staffColor,
         elevation: 0,
         bottom:
             widget.role == 'manager'
                 ? TabBar(
                   controller: _tabController,
-                  indicatorColor: Colors.white,
+                  indicatorColor: Colors.blue.shade900,
                   indicatorWeight: 3,
-                  labelColor: Colors.white,
-                  unselectedLabelColor: Colors.grey,
+                  labelColor: Colors.blue.shade900,
+                  unselectedLabelColor: Colors.white,
                   tabs: [
                     Tab(
                       icon: const Icon(Icons.badge),
@@ -389,7 +390,7 @@ class _ManageUserPageState extends State<ManageUserPage>
           widget.role == 'manager' ? 'Add User' : 'Add Customer',
           style: TextStyle(color: Colors.white),
         ),
-        backgroundColor: Colors.blue.shade900,
+        backgroundColor: staffColor,
         icon: const Icon(Icons.add, color: Colors.white),
       ),
       body:
@@ -439,7 +440,7 @@ class _ManageUserPageState extends State<ManageUserPage>
 
     return RefreshIndicator(
       onRefresh: _fetchUserLists,
-      color: Colors.blue.shade900,
+      color: staffColor,
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: userList.length,
@@ -459,7 +460,7 @@ class _ManageUserPageState extends State<ManageUserPage>
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
-      shadowColor: Colors.blue.shade900.withOpacity(0.1),
+      shadowColor: staffColor.withOpacity(0.1),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
@@ -478,7 +479,7 @@ class _ManageUserPageState extends State<ManageUserPage>
                 ),
                 child: Icon(
                   isStaff ? Icons.badge : Icons.person,
-                  color: isStaff ? Colors.blue.shade900 : Colors.green.shade900,
+                  color: isStaff ? staffColor : Colors.green.shade900,
                   size: 28,
                 ),
               ),
@@ -563,10 +564,7 @@ class _ManageUserPageState extends State<ManageUserPage>
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
-                          color:
-                              isStaff
-                                  ? Colors.blue.shade900
-                                  : Colors.green.shade900,
+                          color: isStaff ? staffColor : Colors.green.shade900,
                         ),
                       ),
                     ),

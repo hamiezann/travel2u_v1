@@ -15,7 +15,7 @@ class _ManageTravelPageState extends State<ManageTravelPage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   bool isLoading = true;
 
-  static const _staffColor = Colors.teal;
+  static const _staffColor = Colors.blue;
 
   @override
   void initState() {
@@ -136,8 +136,8 @@ class _ManageTravelPageState extends State<ManageTravelPage> {
           ).then((_) => _fetchTravelPackages());
         },
         backgroundColor: _staffColor,
-        label: const Text('Add Package'),
-        icon: const Icon(Icons.add),
+        label: const Text('Add Package', style: TextStyle(color: Colors.white)),
+        icon: const Icon(Icons.add, color: Colors.white),
       ),
       body:
           isLoading
