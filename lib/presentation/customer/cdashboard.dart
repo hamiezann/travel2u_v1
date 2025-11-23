@@ -4,6 +4,7 @@ import 'package:travel2u_v1/core/services/auth_service.dart';
 import 'package:travel2u_v1/presentation/auth/change_email_password_page.dart';
 import 'package:travel2u_v1/presentation/customer/booking_list_page.dart';
 import 'package:travel2u_v1/presentation/customer/travel_package_list_page.dart';
+import 'package:travel2u_v1/presentation/customer/wishlist_page.dart';
 import 'package:travel2u_v1/presentation/widgets/custom_message_popup.dart';
 import 'package:travel2u_v1/presentation/widgets/profile_page.dart';
 
@@ -51,13 +52,10 @@ class _CDashboardPageState extends State<CDashboardPage> {
     }
   }
 
-  /// Securely returns a page depending on auth status
   Widget _getPage(int index) {
     if (index == 0) {
       return PackagesPage();
     }
-
-    // MyTrips and Itineraries require login
     if (!isLoggedIn) {
       return Center(
         child: Padding(
@@ -147,7 +145,7 @@ class _CDashboardPageState extends State<CDashboardPage> {
                           Icons.shopping_cart_outlined,
                           color: Colors.blue,
                         ),
-                        title: Text('My Cart'),
+                        title: Text('My Wishlist'),
                       ),
                     ),
                     PopupMenuDivider(),
@@ -171,9 +169,7 @@ class _CDashboardPageState extends State<CDashboardPage> {
                 } else if (value == 2) {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (_) => ChangeAuthenticationPage(),
-                    ),
+                    MaterialPageRoute(builder: (_) => WishlistPage()),
                   );
                 } else if (value == 3) {
                   Navigator.push(

@@ -41,7 +41,7 @@ class _RegisterPageState extends State<RegisterPage> {
     }
 
     setState(() => _isLoading = true);
-
+    bool isActive = true;
     try {
       await _authService.register(
         emailController.text.trim(),
@@ -247,56 +247,56 @@ class _RegisterPageState extends State<RegisterPage> {
                           const SizedBox(height: 16),
 
                           // Role Selection
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.grey[50],
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.grey[300]!),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.person_outline,
-                                  color: Colors.grey,
-                                ),
-                                const SizedBox(width: 12),
-                                const Text(
-                                  'I am a',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: DropdownButtonHideUnderline(
-                                    child: DropdownButton<String>(
-                                      value: role,
-                                      isExpanded: true,
-                                      items: const [
-                                        DropdownMenuItem(
-                                          value: 'customer',
-                                          child: Text('Customer'),
-                                        ),
-                                        DropdownMenuItem(
-                                          value: 'staff',
-                                          child: Text('Staff'),
-                                        ),
-                                      ],
-                                      onChanged: (value) {
-                                        setState(() => role = value!);
-                                      },
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 24),
+                          // Container(
+                          //   padding: const EdgeInsets.symmetric(
+                          //     horizontal: 16,
+                          //     vertical: 4,
+                          //   ),
+                          //   decoration: BoxDecoration(
+                          //     color: Colors.grey[50],
+                          //     borderRadius: BorderRadius.circular(12),
+                          //     border: Border.all(color: Colors.grey[300]!),
+                          //   ),
+                          //   child: Row(
+                          //     children: [
+                          //       const Icon(
+                          //         Icons.person_outline,
+                          //         color: Colors.grey,
+                          //       ),
+                          //       const SizedBox(width: 12),
+                          //       const Text(
+                          //         'I am a',
+                          //         style: TextStyle(
+                          //           fontSize: 16,
+                          //           color: Colors.grey,
+                          //         ),
+                          //       ),
+                          //       const SizedBox(width: 16),
+                          //       Expanded(
+                          //         child: DropdownButtonHideUnderline(
+                          //           child: DropdownButton<String>(
+                          //             value: role,
+                          //             isExpanded: true,
+                          //             items: const [
+                          //               DropdownMenuItem(
+                          //                 value: 'customer',
+                          //                 child: Text('Customer'),
+                          //               ),
+                          //               DropdownMenuItem(
+                          //                 value: 'staff',
+                          //                 child: Text('Staff'),
+                          //               ),
+                          //             ],
+                          //             onChanged: (value) {
+                          //               setState(() => role = value!);
+                          //             },
+                          //           ),
+                          //         ),
+                          //       ),
+                          //     ],
+                          //   ),
+                          // ),
+                          // const SizedBox(height: 24),
 
                           // Register Button
                           SizedBox(

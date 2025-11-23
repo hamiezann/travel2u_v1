@@ -11,7 +11,6 @@ class ManageTravelPage extends StatefulWidget {
 }
 
 class _ManageTravelPageState extends State<ManageTravelPage> {
-  // list of packages
   final Map<String, dynamic> travelPackages = {};
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   bool isLoading = true;
@@ -24,7 +23,6 @@ class _ManageTravelPageState extends State<ManageTravelPage> {
     _fetchTravelPackages();
   }
 
-  // Reload data function (used for initial load and after deletion)
   Future<void> _fetchTravelPackages() async {
     final user = FirebaseAuth.instance.currentUser;
     travelPackages.clear();
@@ -45,9 +43,9 @@ class _ManageTravelPageState extends State<ManageTravelPage> {
       setState(() {
         isLoading = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error fetching travel packages: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error fetching packages: $e')));
     }
   }
 
@@ -56,9 +54,12 @@ class _ManageTravelPageState extends State<ManageTravelPage> {
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: const Text('Confirm Deletion'),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          title: const Text('Delete Package?'),
           content: Text(
-            'Are you sure you want to delete the package: "$packageName"?',
+            'Are you sure you want to delete "$packageName"? This action cannot be undone.',
           ),
           actions: [
             TextButton(
@@ -66,13 +67,12 @@ class _ManageTravelPageState extends State<ManageTravelPage> {
               child: const Text('Cancel'),
             ),
             ElevatedButton(
-              // Use ElevatedButton for the destructive action
               onPressed: () => Navigator.of(dialogContext).pop(true),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              child: const Text(
-                'Delete',
-                style: TextStyle(color: Colors.white),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
               ),
+              child: const Text('Delete'),
             ),
           ],
         );
@@ -81,7 +81,6 @@ class _ManageTravelPageState extends State<ManageTravelPage> {
 
     if (confirmDelete == true) {
       try {
-        // Delete from Firestore
         final package = travelPackages[key];
         final imageUrl = package['imageUrl'];
         if (imageUrl != null && imageUrl.isNotEmpty) {
@@ -99,15 +98,19 @@ class _ManageTravelPageState extends State<ManageTravelPage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Travel package deleted successfully!'),
+              content: Text('Package deleted successfully'),
+              backgroundColor: Colors.green,
             ),
           );
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('Error deleting package: $e')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error deleting package: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
         }
       }
     }
@@ -116,9 +119,10 @@ class _ManageTravelPageState extends State<ManageTravelPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[100],
       appBar: AppBar(
         title: const Text(
-          "Package Inventory",
+          "Travel Packages",
           style: TextStyle(color: Colors.white),
         ),
         backgroundColor: _staffColor,
@@ -132,16 +136,16 @@ class _ManageTravelPageState extends State<ManageTravelPage> {
           ).then((_) => _fetchTravelPackages());
         },
         backgroundColor: _staffColor,
-        label: const Text('New Package', style: TextStyle(color: Colors.white)),
-        icon: const Icon(Icons.add, color: Colors.white),
+        label: const Text('Add Package'),
+        icon: const Icon(Icons.add),
       ),
       body:
           isLoading
               ? const Center(child: CircularProgressIndicator())
               : travelPackages.isEmpty
               ? _buildEmptyState()
-              : Container(
-                decoration: BoxDecoration(color: _staffColor.shade50),
+              : RefreshIndicator(
+                onRefresh: _fetchTravelPackages,
                 child: ListView.builder(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
                   itemCount: travelPackages.length,
@@ -160,24 +164,36 @@ class _ManageTravelPageState extends State<ManageTravelPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.inventory_2_outlined,
-            size: 80,
-            color: _staffColor.withOpacity(0.5),
-          ),
+          Icon(Icons.luggage_outlined, size: 80, color: Colors.grey[400]),
           const SizedBox(height: 16),
-          const Text(
-            "No Travel Packages Found",
+          Text(
+            "No Packages Yet",
             style: TextStyle(
               fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[700],
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            "Tap '+' to add your first package.",
-            style: TextStyle(fontSize: 16, color: Colors.grey),
+          Text(
+            "Create your first travel package",
+            style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pushNamed(
+                context,
+                '/add-travel-package',
+              ).then((_) => _fetchTravelPackages());
+            },
+            icon: const Icon(Icons.add),
+            label: const Text('Add Package'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _staffColor,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
           ),
         ],
       ),
@@ -191,84 +207,172 @@ class _ManageTravelPageState extends State<ManageTravelPage> {
   ) {
     final price = (package['price'] as num?)?.toStringAsFixed(2) ?? 'N/A';
     final packageName = package['name'] ?? 'Untitled Package';
+    final destination = package['destination'] ?? 'No Destination';
+    final duration = package['duration'] ?? 'N/A';
+    final imageUrl = package['imageUrl'];
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      elevation: 4,
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
+        children: [
+          // Image Header (if available)
+          if (imageUrl != null && imageUrl.isNotEmpty)
+            ClipRRect(
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
+              ),
+              child: Image.network(
+                imageUrl,
+                height: 140,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return _buildImagePlaceholder();
+                },
+              ),
+            )
+          else
+            _buildImagePlaceholder(),
+
+          // Content
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Text(
-                    packageName,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey.shade800,
+                // Package Name and Price
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        packageName,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                    const SizedBox(width: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _staffColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        'RM $price',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: _staffColor.shade700,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                Text(
-                  'RM $price',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blue,
-                  ),
+                const SizedBox(height: 12),
+
+                // Destination and Duration
+                Row(
+                  children: [
+                    Icon(
+                      Icons.location_on_outlined,
+                      size: 16,
+                      color: Colors.grey[600],
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        destination,
+                        style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Icon(Icons.schedule, size: 16, color: Colors.grey[600]),
+                    const SizedBox(width: 4),
+                    Text(
+                      '$duration days',
+                      style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Action Buttons
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.pushNamed(
+                            context,
+                            '/update-travel-package',
+                            arguments: {'id': key},
+                          ).then((_) => _fetchTravelPackages());
+                        },
+                        icon: const Icon(Icons.edit_outlined, size: 18),
+                        label: const Text('Edit'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: _staffColor,
+                          side: BorderSide(color: _staffColor),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _handleDelete(key, packageName),
+                        icon: const Icon(Icons.delete_outline, size: 18),
+                        label: const Text('Delete'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.red,
+                          side: const BorderSide(color: Colors.red),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-            const SizedBox(height: 4),
+          ),
+        ],
+      ),
+    );
+  }
 
-            Text(
-              '${package['destination'] ?? 'No Destination'} • ${package['duration'] ?? 'N/A'} days',
-              style: TextStyle(color: Colors.grey[600], fontSize: 14),
-            ),
-
-            const Divider(height: 20),
-
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                OutlinedButton.icon(
-                  onPressed: () {
-                    Navigator.pushNamed(
-                      context,
-                      '/update-travel-package',
-                      arguments: {'id': key}, // Pass ID only
-                    ).then((_) => _fetchTravelPackages());
-                  },
-                  icon: const Icon(Icons.edit, size: 18),
-                  label: const Text('Edit'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: _staffColor,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                OutlinedButton.icon(
-                  onPressed: () => _handleDelete(key, packageName),
-                  icon: const Icon(Icons.delete, size: 18),
-                  label: const Text('Delete'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.red,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
+  Widget _buildImagePlaceholder() {
+    return Container(
+      height: 140,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: _staffColor.withOpacity(0.1),
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(12),
+          topRight: Radius.circular(12),
+        ),
+      ),
+      child: Center(
+        child: Icon(
+          Icons.image_outlined,
+          size: 48,
+          color: _staffColor.withOpacity(0.3),
         ),
       ),
     );

@@ -22,196 +22,378 @@ class _ManageActivityPageState extends State<ManageActivityPage> {
     }
 
     return Scaffold(
+      backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: const Text("Manage Bookings & Itineraries"),
+        title: const Text(
+          "Manage Bookings",
+          style: TextStyle(color: Colors.white),
+        ),
         backgroundColor: Colors.teal,
-        actions: [
-          PopupMenuButton<String>(
-            onSelected: (value) => setState(() => _filter = value),
-            itemBuilder:
-                (context) => [
-                  const PopupMenuItem(value: "all", child: Text("All")),
-                  const PopupMenuItem(value: "booked", child: Text("Booked")),
-                  const PopupMenuItem(value: "pending", child: Text("Pending")),
-                  const PopupMenuItem(
-                    value: "completed",
-                    child: Text("Completed"),
-                  ),
+        elevation: 0,
+      ),
+      body: Column(
+        children: [
+          // Filter Chips Section
+          Container(
+            width: double.infinity,
+            color: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _buildFilterChip("All", "all"),
+                  const SizedBox(width: 8),
+                  _buildFilterChip("Booked", "booked"),
+                  const SizedBox(width: 8),
+                  _buildFilterChip("Pending", "pending"),
+                  const SizedBox(width: 8),
+                  _buildFilterChip("Completed", "completed"),
+                  const SizedBox(width: 8),
+                  _buildFilterChip("Cancelled", "cancelled"),
                 ],
+              ),
+            ),
+          ),
+
+          // Bookings List
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream:
+                  bookingsQuery
+                      .orderBy("createdAt", descending: true)
+                      .snapshots(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                final bookings = snapshot.data!.docs;
+
+                if (bookings.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.inbox_outlined,
+                          size: 64,
+                          color: Colors.grey[400],
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          "No bookings found",
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: bookings.length,
+                  itemBuilder: (context, index) {
+                    final bookingDoc = bookings[index];
+                    final data = bookingDoc.data() as Map<String, dynamic>;
+
+                    final mainUser = data["mainUser"] ?? {};
+                    final travelers = List.from(data["travelers"] ?? []);
+                    final avoidPreference = List.from(
+                      mainUser["avoidPreference"] ?? [],
+                    );
+                    final foodPreference = List.from(
+                      mainUser["foodPreference"] ?? [],
+                    );
+                    final preferredActivities = List.from(
+                      mainUser["preferredActivities"] ?? [],
+                    );
+
+                    DateTime? travelDate;
+                    try {
+                      final rawDate = data["travelDate"];
+                      if (rawDate != null) {
+                        if (rawDate is Timestamp) {
+                          travelDate = rawDate.toDate();
+                        } else if (rawDate is String) {
+                          travelDate = DateTime.tryParse(rawDate);
+                        }
+                      }
+                    } catch (_) {
+                      travelDate = null;
+                    }
+
+                    return Card(
+                      elevation: 2,
+                      margin: const EdgeInsets.only(bottom: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        children: [
+                          // Header with Package Name and Status
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: _getStatusColor(data["status"]),
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(12),
+                                topRight: Radius.circular(12),
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  data["packageTitle"] ?? "Unknown Package",
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  "Status: ${(data["status"] ?? "-").toUpperCase()}",
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.white70,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          // Content
+                          Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Client Info
+                                _buildInfoRow(
+                                  Icons.person,
+                                  mainUser["name"] ?? "-",
+                                ),
+                                const SizedBox(height: 8),
+                                _buildInfoRow(
+                                  Icons.email,
+                                  mainUser["email"] ?? "-",
+                                ),
+                                const SizedBox(height: 8),
+                                _buildInfoRow(
+                                  Icons.phone,
+                                  mainUser["phone"] ?? "-",
+                                ),
+                                const SizedBox(height: 8),
+                                _buildInfoRow(
+                                  Icons.groups,
+                                  "${mainUser["numTravelers"] ?? travelers.length} Travelers",
+                                ),
+                                if (travelDate != null) ...[
+                                  const SizedBox(height: 8),
+                                  _buildInfoRow(
+                                    Icons.calendar_today,
+                                    "${travelDate.toLocal()}".split(" ")[0],
+                                  ),
+                                ],
+
+                                const SizedBox(height: 16),
+
+                                // Preferences Summary
+                                if (foodPreference.isNotEmpty ||
+                                    avoidPreference.isNotEmpty ||
+                                    preferredActivities.isNotEmpty) ...[
+                                  const Text(
+                                    "Preferences",
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  if (foodPreference.isNotEmpty)
+                                    _buildPreferenceChips(
+                                      "Food",
+                                      foodPreference,
+                                    ),
+                                  if (avoidPreference.isNotEmpty)
+                                    _buildPreferenceChips(
+                                      "Avoid",
+                                      avoidPreference,
+                                    ),
+                                  if (preferredActivities.isNotEmpty)
+                                    _buildPreferenceChips(
+                                      "Activities",
+                                      preferredActivities,
+                                    ),
+                                  const SizedBox(height: 16),
+                                ],
+
+                                // Action Buttons
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: OutlinedButton.icon(
+                                        icon: const Icon(
+                                          Icons.chat_bubble_outline,
+                                          size: 14,
+                                        ),
+                                        label: const Text("Chat"),
+                                        onPressed: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder:
+                                                  (_) => ChatPage(
+                                                    bookingId: bookingDoc.id,
+                                                    clientName:
+                                                        mainUser["name"] ?? "-",
+                                                  ),
+                                            ),
+                                          );
+                                        },
+                                        style: OutlinedButton.styleFrom(
+                                          foregroundColor: Colors.teal,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: OutlinedButton.icon(
+                                        icon: const Icon(
+                                          Icons.edit_outlined,
+                                          size: 14,
+                                        ),
+                                        label: const Text("Edit"),
+                                        onPressed: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder:
+                                                  (_) => EditItineraryPage(
+                                                    itineraryId:
+                                                        data["itineraryId"],
+                                                  ),
+                                            ),
+                                          );
+                                        },
+                                        style: OutlinedButton.styleFrom(
+                                          foregroundColor: Colors.blue,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: ElevatedButton.icon(
+                                        icon: const Icon(
+                                          Icons.update,
+                                          size: 14,
+                                        ),
+                                        label: const Text("Status"),
+                                        onPressed:
+                                            () => _updateStatus(
+                                              context,
+                                              bookingDoc.id,
+                                              data["status"],
+                                            ),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.teal,
+                                          foregroundColor: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
           ),
         ],
       ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream:
-            bookingsQuery.orderBy("createdAt", descending: true).snapshots(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
+    );
+  }
 
-          final bookings = snapshot.data!.docs;
+  Widget _buildFilterChip(String label, String value) {
+    final isSelected = _filter == value;
+    return FilterChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (selected) {
+        setState(() => _filter = value);
+      },
+      backgroundColor: Colors.grey[200],
+      selectedColor: Colors.teal,
+      labelStyle: TextStyle(
+        color: isSelected ? Colors.white : Colors.black87,
+        fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+      ),
+      checkmarkColor: Colors.white,
+    );
+  }
 
-          if (bookings.isEmpty) {
-            return const Center(child: Text("No bookings found"));
-          }
+  Widget _buildInfoRow(IconData icon, String text) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: Colors.grey[600]),
+        const SizedBox(width: 8),
+        Expanded(child: Text(text, style: const TextStyle(fontSize: 14))),
+      ],
+    );
+  }
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(12),
-            itemCount: bookings.length,
-            itemBuilder: (context, index) {
-              final bookingDoc = bookings[index];
-              final data = bookingDoc.data() as Map<String, dynamic>;
-
-              final mainUser = data["mainUser"] ?? {};
-              final travelers = List.from(data["travelers"] ?? []);
-              final preferences = data["preferences"] ?? {};
-              final avoidPreference = List.from(
-                mainUser["avoidPreference"] ?? [],
-              );
-              final foodPreference = List.from(
-                mainUser["foodPreference"] ?? [],
-              );
-              final preferredActivities = List.from(
-                mainUser["preferredActivities"] ?? [],
-              );
-
-              DateTime? travelDate;
-              try {
-                final rawDate = data["travelDate"];
-                if (rawDate != null) {
-                  if (rawDate is Timestamp) {
-                    travelDate = rawDate.toDate();
-                  } else if (rawDate is String) {
-                    travelDate = DateTime.tryParse(rawDate);
-                  }
-                }
-              } catch (_) {
-                travelDate = null;
-              }
-
-              return Card(
-                elevation: 4,
-                margin: const EdgeInsets.only(bottom: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Package & Itinerary Info
-                      Text(
-                        data["packageTitle"] ?? "Unknown Package",
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        "Itinerary Status: ${data["itineraryStatus"] ?? "-"}",
-                      ),
-                      Text("Booking Status: ${data["status"] ?? "-"}"),
-                      const Divider(),
-
-                      // User Info
-                      Text("User Name: ${mainUser["name"] ?? "-"}"),
-                      Text("Email: ${mainUser["email"] ?? "-"}"),
-                      Text("Phone: ${mainUser["phone"] ?? "-"}"),
-                      Text(
-                        "Number of Travelers: ${mainUser["numTravelers"] ?? travelers.length}",
-                      ),
-                      if (travelDate != null)
-                        Text(
-                          "Travel Date: ${travelDate.toLocal()}".split(" ")[0],
-                        ),
-                      const Divider(),
-
-                      // Travelers
-                      Text(
-                        "Travelers:",
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      ...travelers.map(
-                        (t) => Text(
-                          "${t["name"] ?? "-"} (${t["relationship"] ?? "-"})",
-                        ),
-                      ),
-
-                      const Divider(),
-
-                      // Preferences
-                      Text("Food Preferences: ${foodPreference.join(", ")}"),
-                      Text("Avoid Preferences: ${avoidPreference.join(", ")}"),
-                      Text(
-                        "Preferred Activities: ${preferredActivities.join(", ")}",
-                      ),
-                      const SizedBox(height: 12),
-
-                      // Actions
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.chat, color: Colors.green),
-                              tooltip: "Chat with Client",
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder:
-                                        (_) => ChatPage(
-                                          bookingId: bookingDoc.id,
-                                          clientName: mainUser["name"] ?? "-",
-                                        ),
-                                  ),
-                                );
-                              },
-                            ),
-                            TextButton.icon(
-                              icon: const Icon(Icons.edit, color: Colors.blue),
-                              label: const Text("Edit Itinerary"),
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder:
-                                        (_) => EditItineraryPage(
-                                          itineraryId: data["itineraryId"],
-                                        ),
-                                  ),
-                                );
-                              },
-                            ),
-                            const SizedBox(width: 8),
-                            TextButton.icon(
-                              icon: const Icon(
-                                Icons.update,
-                                color: Colors.orange,
-                              ),
-                              label: const Text("Update Status"),
-                              onPressed:
-                                  () => _updateStatus(
-                                    context,
-                                    bookingDoc.id,
-                                    data["status"],
-                                  ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          );
-        },
+  Widget _buildPreferenceChips(String label, List items) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Wrap(
+        spacing: 6,
+        runSpacing: 4,
+        children: [
+          Text(
+            "$label: ",
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+          ),
+          ...items.map(
+            (item) => Chip(
+              label: Text(
+                item.toString(),
+                style: const TextStyle(fontSize: 12),
+              ),
+              backgroundColor: Colors.teal[50],
+              padding: EdgeInsets.zero,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          ),
+        ],
       ),
     );
+  }
+
+  Color _getStatusColor(String? status) {
+    switch (status?.toLowerCase()) {
+      case "booked":
+        return Colors.green;
+      case "pending":
+        return Colors.orange;
+      case "completed":
+        return Colors.blue;
+      case "cancelled":
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
   }
 
   void _updateStatus(BuildContext context, String bookingId, String current) {
@@ -223,13 +405,24 @@ class _ManageActivityPageState extends State<ManageActivityPage> {
       builder:
           (context) => AlertDialog(
             title: const Text("Update Booking Status"),
-            content: DropdownButtonFormField<String>(
-              value: current,
-              items:
-                  statuses
-                      .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                      .toList(),
-              onChanged: (value) => newStatus = value!,
+            content: StatefulBuilder(
+              builder: (context, setDialogState) {
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children:
+                      statuses.map((status) {
+                        return RadioListTile<String>(
+                          title: Text(status.toUpperCase()),
+                          value: status,
+                          groupValue: newStatus,
+                          activeColor: Colors.teal,
+                          onChanged: (value) {
+                            setDialogState(() => newStatus = value!);
+                          },
+                        );
+                      }).toList(),
+                );
+              },
             ),
             actions: [
               TextButton(
@@ -242,8 +435,20 @@ class _ManageActivityPageState extends State<ManageActivityPage> {
                       .collection('bookings')
                       .doc(bookingId)
                       .update({"status": newStatus});
-                  Navigator.pop(context);
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Status updated successfully"),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
                 },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.teal,
+                  foregroundColor: Colors.white,
+                ),
                 child: const Text("Update"),
               ),
             ],

@@ -276,16 +276,13 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
     );
   }
 
-  // -------------------------------
-  //        ITINERARY CARD
-  // -------------------------------
   Widget _buildItineraryCard() {
     if (isLoadingItinerary) {
       return _card(
         child: Center(
           child: Padding(
             padding: const EdgeInsets.all(24.0),
-            child: CircularProgressIndicator(),
+            child: CircularProgressIndicator(color: Colors.teal),
           ),
         ),
       );
@@ -294,13 +291,26 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
     if (itinerary == null) {
       return _card(
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Text("No itinerary generated yet.", style: _sub),
+          padding: const EdgeInsets.all(24.0),
+          child: Center(
+            child: Column(
+              children: [
+                Icon(Icons.map_outlined, size: 48, color: Colors.grey[400]),
+                const SizedBox(height: 12),
+                Text(
+                  "No itinerary generated yet",
+                  style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                ),
+              ],
+            ),
+          ),
         ),
       );
     }
 
     final days = itinerary!['days'] ?? [];
+    // final status = widget.bookingData['itineraryStatus'] ?? "pending";
+    final status = itinerary!['status'] ?? "pending";
 
     return _card(
       child: Column(
@@ -308,30 +318,150 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
         children: [
           _sectionTitle("Itinerary", Icons.map_outlined),
 
-          _row("Status", widget.bookingData['itineraryStatus'] ?? "-"),
+          // Status with color-coded badge
+          Row(
+            children: [
+              Text(
+                "Status: ",
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                  color: Colors.grey[700],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: _getStatusColor(status),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  status.toUpperCase(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+            ],
+          ),
 
-          if (itinerary!['generationNotes'] != null) ...[
-            const SizedBox(height: 12),
-            Text("Notes:", style: TextStyle(fontWeight: FontWeight.bold)),
-            Text(itinerary!['generationNotes'], style: _sub),
+          // Notes section
+          if (itinerary!['generationNotes'] != null &&
+              itinerary!['generationNotes'].toString().trim().isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.blue.shade100),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    size: 18,
+                    color: Colors.blue.shade700,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Notes",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                            color: Colors.blue.shade900,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          itinerary!['generationNotes'],
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.blue.shade900,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
 
           const SizedBox(height: 20),
 
+          // Days section
+          if (days.isNotEmpty) ...[
+            Row(
+              children: [
+                Icon(Icons.calendar_today, size: 16, color: Colors.grey[600]),
+                const SizedBox(width: 6),
+                Text(
+                  "${days.length} ${days.length == 1 ? 'Day' : 'Days'}",
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey[700],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+          ],
+
           ...days.asMap().entries.map((entry) {
             final index = entry.key;
             final day = entry.value;
-
-            return _buildDayCard(index + 1, day);
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _buildDayCard(index + 1, day),
+            );
           }).toList(),
+
+          if (days.isEmpty)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Text(
+                  "No days scheduled",
+                  style: TextStyle(color: Colors.grey[500], fontSize: 14),
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
 
+  // Helper method to get status color
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case "generated":
+        return Colors.blue;
+      case "complete":
+        return Colors.green;
+      case "pending":
+        return Colors.orange;
+      case "cancelled":
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
   Widget _buildDayCard(int displayDay, Map day) {
     final activities = day['activities'] ?? [];
-
     return Container(
       margin: EdgeInsets.only(bottom: 16),
       padding: EdgeInsets.all(16),
@@ -341,28 +471,38 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
         children: [
           Text("Day $displayDay", style: _subtitle),
           const SizedBox(height: 10),
-          ...activities.map<Widget>((a) {
-            return Container(
-              margin: const EdgeInsets.only(bottom: 12),
+          if (activities.isEmpty)
+            Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: Color(0xFFF1F5F9),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(a['name'] ?? "-", style: _travName),
-                  const SizedBox(height: 6),
-                  Text("Type: ${a['type']}", style: _sub),
-                  Text("Location: ${a['location']}", style: _sub),
-                  Text("Time: ${a['duration']}", style: _sub),
-                  if (a['foodType'] != null)
-                    Text("Food: ${a['foodType'].join(', ')}", style: _sub),
-                ],
-              ),
-            );
-          }).toList(),
+              child: Text("No activities planned for this day.", style: _sub),
+            )
+          else
+            ...activities.map<Widget>((a) {
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(a['name'] ?? "-", style: _travName),
+                    const SizedBox(height: 6),
+                    Text("Type: ${a['type']}", style: _sub),
+                    Text("Location: ${a['location']}", style: _sub),
+                    Text("Time: ${a['duration']}", style: _sub),
+                    if (a['foodType'] != null)
+                      Text("Food: ${a['foodType'].join(', ')}", style: _sub),
+                  ],
+                ),
+              );
+            }).toList(),
         ],
       ),
     );
@@ -381,6 +521,7 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
         boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 6)],
       ),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           _bottomBtn(Icons.chat, "Chat", () {
             Navigator.push(
@@ -392,26 +533,26 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
                       bookingId: widget.bookingData['id'],
                       userId: booking['userId'],
                       packageId: widget.packageData['id'],
-                      clientName: booking['mainUser']?['name'] ?? "-",
+                      // clientName: booking['mainUser']?['name'] ?? "-",
                     ),
               ),
             );
           }),
-          const SizedBox(width: 12),
-          Expanded(
-            child: ElevatedButton.icon(
-              icon: Icon(Icons.download),
-              onPressed: () {
-                // TODO: implement itinerary download
-              },
-              label: Text("Download Itinerary"),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFF0064D2),
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(vertical: 14),
-              ),
-            ),
-          ),
+          // const SizedBox(width: 12),
+          // Expanded(
+          //   child: ElevatedButton.icon(
+          //     icon: Icon(Icons.download),
+          //     onPressed: () {
+          //       // TODO: implement itinerary download
+          //     },
+          //     label: Text("Download Itinerary"),
+          //     style: ElevatedButton.styleFrom(
+          //       backgroundColor: Color(0xFF0064D2),
+          //       foregroundColor: Colors.white,
+          //       padding: EdgeInsets.symmetric(vertical: 14),
+          //     ),
+          //   ),
+          // ),
         ],
       ),
     );
@@ -419,7 +560,7 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
 
   Widget _bottomBtn(IconData icon, String label, VoidCallback onTap) {
     return Container(
-      width: 60,
+      width: 100,
       height: 55,
       decoration: _box,
       child: InkWell(onTap: onTap, child: Icon(icon, color: Color(0xFF0064D2))),

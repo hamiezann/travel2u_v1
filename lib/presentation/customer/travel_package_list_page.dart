@@ -1,8 +1,13 @@
 // Traveloka-inspired PackagesPage
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:travel2u_v1/core/models/travel_package.dart';
 import 'package:travel2u_v1/presentation/customer/package_detail_page.dart';
+import 'package:travel2u_v1/presentation/widgets/ads_placeholder.dart';
+import 'package:travel2u_v1/presentation/widgets/carousel_slider.dart';
+import 'package:travel2u_v1/presentation/widgets/popular_packages_section.dart';
 
 class PackagesPage extends StatefulWidget {
   const PackagesPage({super.key});
@@ -15,6 +20,14 @@ class _PackagesPageState extends State<PackagesPage> {
   List<TravelPackage> packageList = [];
   bool isLoading = false;
   final _filterTextController = TextEditingController();
+  // String userId = FirebaseAuth.instance.currentUser!.uid;
+  final user = FirebaseAuth.instance.currentUser;
+  List<String> selectedTags = [];
+  List<String> tagsList = [];
+  DateTime? startDate;
+  DateTime? endDate;
+  List<TravelPackage> popularPackages = [];
+  bool showFilter = false; // toggle filter section
 
   @override
   void initState() {
@@ -29,6 +42,8 @@ class _PackagesPageState extends State<PackagesPage> {
         });
       }
     });
+    fetchTags();
+    fetchPopularPackages();
   }
 
   @override
@@ -40,61 +55,198 @@ class _PackagesPageState extends State<PackagesPage> {
   Future<void> _fetchTravelPackages(String query) async {
     setState(() => isLoading = true);
     try {
-      final _firestore = FirebaseFirestore.instance;
+      final firestore = FirebaseFirestore.instance;
 
+      final lowerQuery = query.toLowerCase();
       final nameResults =
-          await _firestore
+          await firestore
               .collection('travel_packages')
-              .where('name', isGreaterThanOrEqualTo: query)
-              .where('name', isLessThanOrEqualTo: '$query\uf8ff')
+              .where('name_lower', isGreaterThanOrEqualTo: lowerQuery)
+              .where('name_lower', isLessThanOrEqualTo: '$lowerQuery\uf8ff')
               .get();
-
       final destResults =
-          await _firestore
+          await firestore
               .collection('travel_packages')
-              .where('destination', isGreaterThanOrEqualTo: query)
-              .where('destination', isLessThanOrEqualTo: '$query\uf8ff')
-              .get();
-      final allDocs = {...nameResults.docs, ...destResults.docs}.toList();
-      final fetchedPackages =
-          allDocs
-              .map(
-                (doc) =>
-                // TravelPackage.fromJson(doc.data() as Map<String, dynamic>),
-                TravelPackage.fromJson(doc.data()),
+              .where('destination_lower', isGreaterThanOrEqualTo: lowerQuery)
+              .where(
+                'destination_lower',
+                isLessThanOrEqualTo: '$lowerQuery\uf8ff',
               )
+              .get();
+      final uniqueDocs = {
+        for (var doc in [...nameResults.docs, ...destResults.docs]) doc.id: doc,
+      };
+
+      final fetchedPackages =
+          uniqueDocs.values
+              .map((doc) => TravelPackage.fromJson(doc.data()))
               .toList();
+
       if (mounted) {
         setState(() {
           packageList = fetchedPackages;
           isLoading = false;
         });
-      } else {
-        isLoading = false;
       }
     } catch (e) {
       if (!mounted) return;
-      setState(() {
-        isLoading = false;
-      });
-      print(e);
+      setState(() => isLoading = false);
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error fetching travel packages: $e')),
       );
     }
   }
 
+  Future<void> fetchTags() async {
+    final docSnapshot =
+        await FirebaseFirestore.instance
+            .collection('taxonomy')
+            .doc('tags')
+            .get();
+
+    if (docSnapshot.exists) {
+      final data = docSnapshot.data() as Map<String, dynamic>?;
+
+      // assuming field in firestore is { tags: ["Weekend Getaway", ...] }
+      tagsList = List<String>.from(data?['values'] ?? []);
+    } else {
+      tagsList = [];
+    }
+
+    setState(() {});
+  }
+
+  Future<void> fetchPopularPackages() async {
+    final snapShot =
+        await FirebaseFirestore.instance.collection('bookings').get();
+    final packageCounts = <String, int>{};
+
+    for (var doc in snapShot.docs) {
+      final packageId = doc['packageId'] as String?;
+      if (packageId != null) {
+        packageCounts[packageId] = (packageCounts[packageId] ?? 0) + 1;
+      }
+    }
+    final popularPackageIds = packageCounts.keys.toList();
+    popularPackages = [];
+
+    for (var pkgId in popularPackageIds) {
+      final pkgDoc =
+          await FirebaseFirestore.instance
+              .collection('travel_packages')
+              .doc(pkgId)
+              .get();
+
+      if (pkgDoc.exists) {
+        popularPackages.add(
+          TravelPackage.fromJson(pkgDoc.data() as Map<String, dynamic>),
+        );
+      }
+    }
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  Future<void> toggleWishlist(String userId, TravelPackage package) async {
+    final wishlistRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .collection('wishlist')
+        .doc(package.id);
+
+    final doc = await wishlistRef.get();
+
+    if (doc.exists) {
+      await wishlistRef.delete();
+    } else {
+      await wishlistRef.set({
+        "packageId": package.id,
+        "name": package.name,
+        "imageUrl": package.imageUrl,
+        "destination": package.destination,
+        "price": package.price,
+        "savedAt": DateTime.now(),
+      });
+    }
+
+    setState(() {});
+  }
+
+  Stream<bool> isWishlisted(String userId, String packageId) {
+    return FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .collection('wishlist')
+        .doc(packageId)
+        .snapshots()
+        .map((snap) => snap.exists);
+  }
+
+  Future<void> _applyFilters() async {
+    setState(() => isLoading = true);
+    final firestore = FirebaseFirestore.instance;
+    Query q = firestore.collection('travel_packages');
+    if (selectedTags.isNotEmpty) {
+      q = q.where('tags', arrayContainsAny: selectedTags);
+    }
+    late QuerySnapshot snap;
+    try {
+      snap = await q.get();
+    } catch (e) {
+      print("Filter error: $e");
+      setState(() => isLoading = false);
+      return;
+    }
+    List<TravelPackage> results =
+        snap.docs
+            .map(
+              (d) => TravelPackage.fromJson(d.data() as Map<String, dynamic>),
+            )
+            .toList();
+    if (startDate != null || endDate != null) {
+      // print(startDate);
+      // print(endDate);
+      results =
+          results.where((pkg) {
+            final pkgDate = pkg.travelDate;
+            if (pkgDate == null) return false;
+            if (startDate != null && pkgDate.isBefore(startDate!)) return false;
+            if (endDate != null && pkgDate.isAfter(endDate!)) return false;
+            return true;
+          }).toList();
+    }
+
+    setState(() {
+      packageList = results;
+      isLoading = false;
+    });
+  }
+
+  void _resetFilters() {
+    setState(() {
+      _filterTextController.clear();
+      selectedTags.clear();
+      startDate = null;
+      endDate = null;
+      packageList.clear();
+      showFilter = false; // collapse filter UI
+    });
+
+    fetchPopularPackages(); // reload popular
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color(0xFFF7F9FC), // Light gray background like Traveloka
+      color: const Color(0xFFF7F9FC),
       child: Column(
         children: [
-          // Search Bar with Traveloka blue
           Container(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
             decoration: const BoxDecoration(
-              color: Color(0xFF0064D2), // Traveloka primary blue
+              color: Color(0xFF0064D2),
               borderRadius: BorderRadius.only(
                 bottomLeft: Radius.circular(20),
                 bottomRight: Radius.circular(20),
@@ -102,87 +254,310 @@ class _PackagesPageState extends State<PackagesPage> {
             ),
             child: SafeArea(
               bottom: false,
-              child: TextField(
-                controller: _filterTextController,
-                decoration: InputDecoration(
-                  hintText: 'Search destination or package name',
-                  hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
-                  prefixIcon: const Icon(
-                    Icons.search,
-                    color: Color(0xFF0064D2),
-                    size: 22,
-                  ),
-                  filled: true,
-                  fillColor: Colors.white,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
-                      color: Color(0xFF0064D2),
-                      width: 2,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _filterTextController,
+                      decoration: InputDecoration(
+                        hintText: 'Search destination or package name',
+                        hintStyle: TextStyle(
+                          color: Colors.grey[400],
+                          fontSize: 14,
+                        ),
+                        prefixIcon: const Icon(
+                          Icons.search,
+                          color: Color(0xFF0064D2),
+                          size: 22,
+                        ),
+                        filled: true,
+                        fillColor: Colors.white,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(
+                            color: Color(0xFF0064D2),
+                            width: 2,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
+                  const SizedBox(width: 12),
+                  IconButton(
+                    onPressed: _resetFilters,
+                    icon: const Icon(Icons.refresh, color: Colors.white),
+                    tooltip: "Reset filters",
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // FILTER TOGGLE BUTTON
+          Expanded(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+              ),
+              child: Container(
+                child: Column(
+                  children: [
+                    GestureDetector(
+                      onTap: () {
+                        setState(() => showFilter = !showFilter);
+                      },
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        color: Colors.white,
+                        child: Row(
+                          children: [
+                            Icon(Icons.filter_list, color: Colors.black87),
+                            SizedBox(width: 8),
+                            Text(
+                              "Filters",
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Spacer(),
+                            Icon(
+                              showFilter
+                                  ? Icons.expand_less
+                                  : Icons.expand_more,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    // FILTER CONTENT
+                    if (showFilter)
+                      Container(
+                        padding: EdgeInsets.all(16),
+                        color: Colors.white,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Filter by Tags",
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            SizedBox(height: 8),
+
+                            // TAG SELECTOR
+                            Wrap(
+                              spacing: 8,
+                              children:
+                                  tagsList.map((tag) {
+                                    final isSelected = selectedTags.contains(
+                                      tag,
+                                    );
+                                    return ChoiceChip(
+                                      label: Text(tag),
+                                      selected: isSelected,
+                                      selectedColor: Colors.blue,
+                                      backgroundColor: Colors.blue.shade200,
+                                      labelStyle: TextStyle(
+                                        color: Colors.white,
+                                      ),
+                                      onSelected: (_) {
+                                        setState(() {
+                                          isSelected
+                                              ? selectedTags.remove(tag)
+                                              : selectedTags.add(tag);
+                                        });
+                                        _applyFilters();
+                                      },
+                                    );
+                                  }).toList(),
+                            ),
+
+                            SizedBox(height: 20),
+                            Text(
+                              "Travel Date Range",
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor:
+                                          Colors.blue, // Button color
+                                      foregroundColor:
+                                          Colors.white, // Text/icon color
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: 24,
+                                        vertical: 12,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      elevation: 5, // Shadow depth
+                                    ),
+                                    onPressed: () async {
+                                      final picked = await showDatePicker(
+                                        context: context,
+                                        initialDate: DateTime.now(),
+                                        firstDate: DateTime(2025),
+                                        lastDate: DateTime(2035),
+                                      );
+                                      if (picked != null) {
+                                        setState(() {
+                                          startDate = picked;
+                                        });
+                                        _applyFilters();
+                                      }
+                                    },
+                                    child: Text(
+                                      startDate == null
+                                          ? "Start Date"
+                                          : DateFormat(
+                                            "dd/MM/yyyy",
+                                          ).format(startDate!),
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(width: 12),
+                                Expanded(
+                                  child: ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor:
+                                          Colors.blue, // Button color
+                                      foregroundColor:
+                                          Colors.white, // Text/icon color
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: 24,
+                                        vertical: 12,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      elevation: 5, // Shadow depth
+                                    ),
+                                    onPressed: () async {
+                                      final picked = await showDatePicker(
+                                        context: context,
+                                        initialDate: DateTime.now(),
+                                        firstDate: DateTime(2020),
+                                        lastDate: DateTime(2035),
+                                      );
+                                      if (picked != null) {
+                                        setState(() {
+                                          endDate = picked;
+                                        });
+                                        _applyFilters();
+                                      }
+                                    },
+                                    child: Text(
+                                      endDate == null
+                                          ? "End Date"
+                                          : DateFormat(
+                                            "dd/MM/yyyy",
+                                          ).format(endDate!),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+
+                    _buildMainSection(),
+                  ],
                 ),
               ),
             ),
           ),
+
           // Package List
-          Expanded(
-            child:
-                isLoading
-                    ? const Center(
-                      child: CircularProgressIndicator(
-                        color: Color(0xFF0064D2),
-                      ),
-                    )
-                    : packageList.isEmpty
-                    ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.travel_explore,
-                            size: 80,
-                            color: Colors.grey[300],
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Start searching for your next adventure',
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontSize: 16,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                    : ListView.builder(
-                      padding: EdgeInsets.fromLTRB(
-                        16,
-                        16,
-                        16,
-                        MediaQuery.of(context).padding.bottom + 16,
-                      ),
-                      itemCount: packageList.length,
-                      itemBuilder: (context, index) {
-                        final package = packageList[index];
-                        return _buildPackageCard(context, package, index);
-                      },
-                    ),
-          ),
+          // Expanded(
+          //   child:
+          //       isLoading
+          //           ? const Center(
+          //             child: CircularProgressIndicator(
+          //               color: Color(0xFF0064D2),
+          //             ),
+          //           )
+          //           : packageList.isEmpty
+          //           ?
+          //           Expanded(
+          //             child: Column(
+          //               children: [
+          //                 buildImageSlider(),
+          //                 // buildAdsPlaceholder(),
+          //                 buildPopularPackages(popularPackages),
+          //               ],
+          //             ),
+          //           )
+          //           : ListView.builder(
+          //             padding: EdgeInsets.fromLTRB(
+          //               16,
+          //               16,
+          //               16,
+          //               MediaQuery.of(context).padding.bottom + 16,
+          //             ),
+          //             itemCount: packageList.length,
+          //             itemBuilder: (context, index) {
+          //               final package = packageList[index];
+          //               return _buildPackageCard(context, package, index);
+          //             },
+          //           ),
+          // ),
         ],
       ),
+    );
+  }
+
+  Widget _buildMainSection() {
+    if (isLoading) {
+      return const Padding(
+        padding: EdgeInsets.only(top: 100),
+        child: Center(
+          child: CircularProgressIndicator(color: Color(0xFF0064D2)),
+        ),
+      );
+    }
+    if (packageList.isEmpty) {
+      return Column(
+        children: [
+          buildImageSlider(),
+          const SizedBox(height: 24),
+          buildPopularPackages(popularPackages),
+        ],
+      );
+    }
+
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: NeverScrollableScrollPhysics(),
+      padding: EdgeInsets.fromLTRB(
+        16,
+        16,
+        16,
+        MediaQuery.of(context).padding.bottom + 16,
+      ),
+      itemCount: packageList.length,
+      itemBuilder: (context, index) {
+        final package = packageList[index];
+        return _buildPackageCard(context, package, index);
+      },
     );
   }
 
@@ -191,6 +566,9 @@ class _PackagesPageState extends State<PackagesPage> {
     TravelPackage package,
     int index,
   ) {
+    // if (user == null) return SizedBox();
+    // final userId = user!.uid;
+    final userId = user?.uid; // may be null
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 0,
@@ -353,40 +731,79 @@ class _PackagesPageState extends State<PackagesPage> {
                     ),
                   if (package.tags.isNotEmpty) const SizedBox(height: 12),
 
-                  // Duration
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF7F9FC),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.schedule,
-                          size: 14,
-                          color: Color(0xFF687089),
+                  Row(
+                    children: [
+                      // Duration
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
                         ),
-                        const SizedBox(width: 6),
-                        Text(
-                          package.duration > 0
-                              ? '${package.duration} days'
-                              : 'Duration N/A',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: Color(0xFF687089),
-                            fontWeight: FontWeight.w500,
-                          ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF7F9FC),
+                          borderRadius: BorderRadius.circular(6),
                         ),
-                      ],
-                    ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.schedule,
+                              size: 14,
+                              color: Color(0xFF687089),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              package.duration > 0
+                                  ? '${package.duration} days'
+                                  : 'Duration N/A',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: Color(0xFF687089),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF7F9FC),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.date_range,
+                              size: 14,
+                              color: Color(0xFF687089),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              package.travelDate != null
+                                  ? DateFormat("dd/MM/yyyy").format(
+                                    DateTime.parse(
+                                      package.travelDate.toLocal().toString(),
+                                    ).toLocal(),
+                                  )
+                                  : '-',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: Color(0xFF687089),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 16),
-
                   // Divider
                   Divider(color: Colors.grey[200], height: 1),
                   const SizedBox(height: 16),
@@ -420,38 +837,86 @@ class _PackagesPageState extends State<PackagesPage> {
                           ],
                         ),
                       ),
-                      // Book Button
-                      ElevatedButton(
-                        onPressed: () {
-                          // _showBookingDialog(context, index);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder:
-                                  (_) => PackageDetailPage(package: package),
+                      const SizedBox(width: 10),
+                      userId == null
+                          ? IconButton(
+                            onPressed: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    "Please log in to save to wishlist",
+                                  ),
+                                ),
+                              );
+                            },
+                            icon: const Icon(
+                              Icons.favorite_border,
+                              color: Colors.grey,
                             ),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF0064D2),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 12,
+                          )
+                          : Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              StreamBuilder<bool>(
+                                stream: isWishlisted(userId, package.id),
+                                builder: (context, snapshot) {
+                                  final isSaved = snapshot.data ?? false;
+
+                                  return IconButton(
+                                    onPressed: () {
+                                      toggleWishlist(userId, package);
+                                    },
+                                    icon: Icon(
+                                      isSaved
+                                          ? Icons.favorite
+                                          : Icons.favorite_border,
+                                      color:
+                                          isSaved
+                                              ? Colors.red
+                                              : Color(0xFF0064D2),
+                                      size: 28,
+                                    ),
+                                  );
+                                },
+                              ),
+
+                              SizedBox(width: 8),
+
+                              // Trip details main button
+                              ElevatedButton(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder:
+                                          (_) => PackageDetailPage(
+                                            package: package,
+                                          ),
+                                    ),
+                                  );
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Color(0xFF0064D2),
+                                  foregroundColor: Colors.white,
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 24,
+                                    vertical: 12,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  elevation: 0,
+                                ),
+                                child: Text(
+                                  'Trip Details',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          elevation: 0,
-                        ),
-                        child: const Text(
-                          'Trip Details',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
                     ],
                   ),
                 ],

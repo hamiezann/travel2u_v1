@@ -14,6 +14,7 @@ class AuthService {
       'email': email,
       'role': role,
       'createdAt': FieldValue.serverTimestamp(),
+      'isActive': true,
     });
     return cred.user;
   }
@@ -23,6 +24,21 @@ class AuthService {
       email: email,
       password: password,
     );
+    await _db
+        .collection('users')
+        .where('isActive', isEqualTo: true)
+        .where('email', isEqualTo: email)
+        .get()
+        .then((snapshot) {
+          if (snapshot.docs.isEmpty) {
+            throw FirebaseAuthException(
+              code: 'user-inactive',
+              message: 'This user account is inactive.',
+            );
+          }
+          return;
+        });
+
     return cred.user;
   }
 

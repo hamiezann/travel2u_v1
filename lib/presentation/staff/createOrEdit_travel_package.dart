@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import 'package:multi_select_flutter/dialog/multi_select_dialog_field.dart';
 import 'package:multi_select_flutter/util/multi_select_item.dart';
 import 'package:travel2u_v1/core/models/activity.dart';
@@ -28,7 +29,10 @@ class _CreateOrEditTravelPackagePageState
     id: '',
     name: '',
     destination: '',
+    name_lower: '',
+    destination_lower: '',
     duration: 0,
+    travelDate: DateTime.now(),
     price: 0.0,
     imageUrl: '',
     tourGuide: '',
@@ -46,8 +50,9 @@ class _CreateOrEditTravelPackagePageState
   final _destinationController = TextEditingController();
   final _durationController = TextEditingController();
   DateTimeRange? _selectedDateRange;
+  final _travelDateController = TextEditingController();
   final _priceController = TextEditingController();
-  var _imageUrlController = TextEditingController();
+  final _imageUrlController = TextEditingController(); // before this var
   var _tourGuideController = TextEditingController();
   final _hotelDetailController = TextEditingController();
   final _hotelRatingController = TextEditingController();
@@ -164,6 +169,8 @@ class _CreateOrEditTravelPackagePageState
             _nameController.text = _travelPackage.name;
             _destinationController.text = _travelPackage.destination;
             _durationController.text = _travelPackage.duration.toString();
+            _travelDateController.text =
+                "${_travelPackage.travelDate.toLocal()}".split(' ')[0];
             _priceController.text = _travelPackage.price.toString();
             _imageUrlController.text = _travelPackage.imageUrl;
             _tourGuideController.text = _travelPackage.tourGuide;
@@ -325,10 +332,7 @@ class _CreateOrEditTravelPackagePageState
         try {
           final oldRef = FirebaseStorage.instance.refFromURL(_oldImageUrl!);
           await oldRef.delete();
-          // print('Old image deleted.');
-        } catch (e) {
-          // print('No old image to delete or failed: $e');
-        }
+        } catch (e) {}
       }
 
       // Upload new image
@@ -363,8 +367,6 @@ class _CreateOrEditTravelPackagePageState
 
       int totalDays =
           int.tryParse(_durationController.text.split(' ').first) ?? 1;
-
-      // ✅ Check that every day has exactly 8 filled slots
       bool allDaysFilled = true;
       for (int day = 1; day <= totalDays; day++) {
         if ((_takenSlotsByDay[day]?.length ?? 0) < 8) {
@@ -422,7 +424,10 @@ class _CreateOrEditTravelPackagePageState
         'id': _travelPackage.id,
         'name': _travelPackage.name,
         'destination': _travelPackage.destination,
+        'name_lower': _travelPackage.name.toLowerCase(),
+        'destination_lower': _travelPackage.destination.toLowerCase(),
         'duration': _travelPackage.duration,
+        'travelDate': _travelPackage.travelDate.toIso8601String(),
         'price': _travelPackage.price,
         'imageUrl': _travelPackage.imageUrl,
         'tourGuide': _travelPackage.tourGuide,
@@ -461,7 +466,10 @@ class _CreateOrEditTravelPackagePageState
           id: '',
           name: '',
           destination: '',
+          name_lower: '',
+          destination_lower: '',
           duration: 0,
+          travelDate: DateTime.now(),
           price: 0.0,
           imageUrl: '',
           hotelDetail: '',
@@ -552,7 +560,6 @@ class _CreateOrEditTravelPackagePageState
   //   }
   // }
 
-  // Check if user can leave
   Future<bool> _onWillPop() async {
     if (!_hasUnsavedChanges || _isSubmitting) {
       return true;
@@ -817,22 +824,6 @@ class _CreateOrEditTravelPackagePageState
                       : null,
         ),
         const SizedBox(height: 16),
-        // TextFormField(
-        //   controller: _tourGuideController,
-        //   decoration: InputDecoration(
-        //     labelText: 'Tour Guide Name',
-        //     // hintText: 'e.g., Bali, Indonesia',
-        //     prefixIcon: const Icon(Icons.hail_outlined),
-        //     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        //     filled: true,
-        //     fillColor: Colors.grey.shade50,
-        //   ),
-        //   validator:
-        //       (value) =>
-        //           (value == null || value.isEmpty)
-        //               ? 'Please enter tour guide name'
-        //               : null,
-        // ),
         Autocomplete<String>(
           optionsBuilder: (TextEditingValue textEditingValue) {
             if (textEditingValue.text.isEmpty) {
@@ -998,7 +989,9 @@ class _CreateOrEditTravelPackagePageState
                   if (pickedRange != null) {
                     setState(() {
                       _selectedDateRange = pickedRange;
-
+                      _travelDateController.text = DateFormat(
+                        'yyyy-MM-dd',
+                      ).format(pickedRange.start);
                       final difference =
                           pickedRange.end.difference(pickedRange.start).inDays +
                           1;
@@ -1058,7 +1051,18 @@ class _CreateOrEditTravelPackagePageState
           ],
         ),
         const SizedBox(height: 24),
-
+        TextFormField(
+          controller: _travelDateController,
+          decoration: InputDecoration(
+            labelText: 'Travel Date',
+            prefixIcon: Icon(Icons.date_range),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            filled: true,
+            fillColor: Colors.grey.shade50,
+          ),
+          readOnly: true,
+        ),
+        const SizedBox(height: 24),
         // Image Upload
         const Text(
           'Cover Photo',

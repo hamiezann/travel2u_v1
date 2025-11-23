@@ -108,7 +108,6 @@ class _BookingPageState extends State<BookingPage> {
     return shouldLeave ?? false;
   }
 
-  // ⬅️ NEW: autosave when user leaves Page 2
   void _autoSaveBookingPage2() {
     // if (_bookingPage2Key.currentState != null) {
     //   final data = _bookingPage2Key.currentState!.getBookingData();
@@ -161,23 +160,33 @@ class _BookingPageState extends State<BookingPage> {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isSavingLoading = true);
+
     await _bookingPage2Key.currentState?.savePreferencesToFirestore();
+
     try {
+      final bookingCollection = FirebaseFirestore.instance.collection(
+        'bookings',
+      );
+
+      // 1️⃣ Create a document reference first
+      final docRef = bookingCollection.doc();
+
+      // 2️⃣ Insert Firestore ID into your data
       final bookingData = {
         ..._bookingData,
+        'id': docRef.id, // <-- the generated ID
         'userId': FirebaseAuth.instance.currentUser?.uid,
-        'id': FirebaseFirestore.instance.collection('bookings').doc().id,
         'packageId': widget.packageId,
-        'status': 'Booked',
+        'status': 'booked',
         'createdAt': FieldValue.serverTimestamp(),
       };
 
+      // 3️⃣ Save data
+      await docRef.set(bookingData);
+
+      // --- Anything after this is fine ---
       final userId =
           bookingData['userId'] ?? FirebaseAuth.instance.currentUser?.uid;
-
-      final bookingRef = await FirebaseFirestore.instance
-          .collection('bookings')
-          .add(bookingData);
 
       final result = await ItineraryService.generateUserItinerary(
         userId: userId ?? '',
@@ -197,28 +206,29 @@ class _BookingPageState extends State<BookingPage> {
         updateData['itineraryError'] = result['message'] ?? 'Unknown error';
       }
 
-      await bookingRef.update(updateData);
+      // 4️⃣ Update booking
+      await docRef.update(updateData);
 
-      if (mounted) {
-        setState(() {
-          _isSavingLoading = false;
-          _isSubmitting = true;
-        });
+      if (!mounted) return;
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              result['success'] == true
-                  ? 'Booking submitted! Itinerary pending approval.'
-                  : 'Booking submitted but itinerary generation failed. Staff will verify.',
-            ),
-            backgroundColor:
-                result['success'] == true ? Colors.green : Colors.orange,
+      setState(() {
+        _isSavingLoading = false;
+        _isSubmitting = true;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            result['success'] == true
+                ? 'Booking submitted! Itinerary pending approval.'
+                : 'Booking submitted but itinerary generation failed. Staff will verify.',
           ),
-        );
+          backgroundColor:
+              result['success'] == true ? Colors.green : Colors.orange,
+        ),
+      );
 
-        Navigator.pop(context);
-      }
+      Navigator.pop(context);
     } catch (e, st) {
       debugPrint('Error submitting booking: $e\n$st');
       ScaffoldMessenger.of(context).showSnackBar(

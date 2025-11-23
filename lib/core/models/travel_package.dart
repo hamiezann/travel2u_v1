@@ -5,6 +5,9 @@ class TravelPackage {
   String name;
   String destination;
   int duration;
+  String destination_lower;
+  String name_lower;
+  DateTime travelDate;
   double price;
   String imageUrl;
   String tourGuide;
@@ -19,7 +22,10 @@ class TravelPackage {
   TravelPackage({
     required this.id,
     required this.name,
+    required this.name_lower,
+    required this.destination_lower,
     required this.destination,
+    required this.travelDate,
     required this.duration,
     required this.price,
     required this.imageUrl,
@@ -38,7 +44,10 @@ class TravelPackage {
       id: json['id'] ?? '',
       name: json['name'] ?? '',
       destination: json['destination'] ?? '',
+      name_lower: json['name_lower'] ?? '',
+      destination_lower: json['destination_lower'] ?? '',
       duration: (json['duration'] ?? 0).toInt(),
+      travelDate: DateTime.tryParse(json['travelDate'] ?? "") ?? DateTime.now(),
       price: (json['price'] as num?)?.toDouble() ?? 0.0,
       imageUrl: json['imageUrl'] ?? '',
       tourGuide: json['tourGuide'] ?? '',
@@ -76,6 +85,7 @@ class TravelPackage {
     'name': name,
     'destination': destination,
     'duration': duration,
+    'travelDate': travelDate.toIso8601String(),
     'price': price,
     'imageUrl': imageUrl,
     'tourGuide': tourGuide,

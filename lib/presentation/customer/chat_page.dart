@@ -5,14 +5,14 @@ class ChatPage extends StatefulWidget {
   final String bookingId;
   final String userId;
   final String packageId;
-  final String clientName;
+  // final String clientName;
 
   const ChatPage({
     super.key,
     required this.bookingId,
     required this.userId,
     required this.packageId,
-    required this.clientName,
+    // required this.clientName,
   });
 
   @override
@@ -32,7 +32,7 @@ class _ChatPageState extends State<ChatPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text("Chat with ${widget.clientName}"),
+        title: Text("Chat with Support"),
         backgroundColor: Colors.teal,
       ),
       body: Column(

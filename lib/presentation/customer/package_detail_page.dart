@@ -1,6 +1,8 @@
 // Simplified Traveloka-style Package Detail Page
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:travel2u_v1/core/models/travel_package.dart';
+import 'package:travel2u_v1/presentation/auth/login.dart';
 
 class PackageDetailPage extends StatefulWidget {
   final TravelPackage package;
@@ -12,6 +14,8 @@ class PackageDetailPage extends StatefulWidget {
 }
 
 class _PackageDetailPageState extends State<PackageDetailPage> {
+  final user = FirebaseAuth.instance.currentUser;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -455,34 +459,60 @@ class _PackageDetailPageState extends State<PackageDetailPage> {
                 ],
               ),
             ),
-            // Book Button
-            ElevatedButton(
-              onPressed: () {
-                // _showBookingDialog(context);
-                print(widget.package.id);
-                Navigator.pushNamed(
-                  context,
-                  '/booking-page',
-                  arguments: {'packageId': widget.package.id},
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0064D2),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 40,
-                  vertical: 16,
+            (user != null)
+                ?
+                // Book Button
+                ElevatedButton(
+                  onPressed: () {
+                    // _showBookingDialog(context);
+                    print(widget.package.id);
+                    Navigator.pushNamed(
+                      context,
+                      '/booking-page',
+                      arguments: {'packageId': widget.package.id},
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0064D2),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 40,
+                      vertical: 16,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: const Text(
+                    'Book Now',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                )
+                : ElevatedButton(
+                  onPressed: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => LoginPage()),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.grey[400],
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 40,
+                      vertical: 16,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: const Text(
+                    'Login to Book',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
                 ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 0,
-              ),
-              child: const Text(
-                'Book Now',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              ),
-            ),
           ],
         ),
       ),

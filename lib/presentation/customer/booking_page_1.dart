@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:travel2u_v1/core/models/travel_package.dart';
 
 class BookingPage1 extends StatefulWidget {
@@ -18,12 +19,11 @@ class BookingPage1 extends StatefulWidget {
 }
 
 class _BookingPage1State extends State<BookingPage1> {
-  // final _travelerController = TextEditingController();
   late TextEditingController nameCtrl;
   late TextEditingController emailCtrl;
   late TextEditingController phoneCtrl;
   late TextEditingController paxCtrl;
-
+  final TextEditingController _travelDateController = TextEditingController();
   DateTime? selectedDate;
 
   @override
@@ -37,9 +37,26 @@ class _BookingPage1State extends State<BookingPage1> {
       text: widget.initialData["numTravelers"]?.toString() ?? "",
     );
 
-    if (widget.initialData["travelDate"] != null) {
-      selectedDate = DateTime.tryParse(widget.initialData["travelDate"]);
+    // if (widget.initialData["travelDate"] != null) {
+    //   // selectedDate = DateTime.tryParse(widget.initialData["travelDate"]);
+    //   _travelDateController.text = DateFormat(
+    //     'dd/MM/yyyy',
+    //   ).format(widget.initialData['travelDate']);
+    //   ;
+    // }
+    if (widget.package.travelDate != null) {
+      final date = DateFormat("dd/MM/yyyy").format(
+        DateTime.parse(
+          widget.package.travelDate.toLocal().toString(),
+        ).toLocal(),
+      );
+      if (date != null) {
+        _travelDateController.text = date;
+      }
     }
+
+    // _travelDateController.text =
+    // DateFormat('dd/MM/yyyy').format(pickedRange.start);
   }
 
   @override
@@ -331,7 +348,8 @@ class _BookingPage1State extends State<BookingPage1> {
                     "email": emailCtrl.text,
                     "phone": phoneCtrl.text,
                     "numTravelers": int.tryParse(paxCtrl.text) ?? 1,
-                    "travelDate": selectedDate?.toIso8601String(),
+                    // "travelDate": selectedDate?.toIso8601String(),
+                    "travelDate": widget.package.travelDate.toIso8601String(),
                   });
                 },
               ),
@@ -366,59 +384,84 @@ class _BookingPage1State extends State<BookingPage1> {
                 ],
               ),
               const SizedBox(height: 10),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+
+              // Row(
+              //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              //   children: [
+              //     const Text(
+              //       'Travel Date:',
+              //       style: TextStyle(
+              //         fontSize: 16,
+              //         color: Color(0xFF687089),
+              //         fontWeight: FontWeight.w600,
+              //       ),
+              //     ),
+              //     TextButton(
+              //       onPressed: () async {
+              //         final now = DateTime.now();
+              //         final picked = await showDatePicker(
+              //           context: context,
+              //           initialDate: selectedDate ?? now,
+              //           firstDate: now,
+              //           lastDate: DateTime(now.year + 2), // allow 2 years ahead
+              //         );
+              //         if (picked != null) {
+              //           setState(() => selectedDate = picked);
+              //         }
+              //       },
+              //       child: Text(
+              //         selectedDate != null
+              //             ? '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}'
+              //             : 'Pick a date',
+              //         style: const TextStyle(
+              //           fontSize: 16,
+              //           color: Color(0xFF0064D2),
+              //           fontWeight: FontWeight.w600,
+              //         ),
+              //       ),
+              //     ),
+              //   ],
+              // ),
+              // const SizedBox(height: 10),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Travel Date:',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Color(0xFF687089),
-                      fontWeight: FontWeight.w600,
-                    ),
+                  Text(
+                    "Travel Date",
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
-                  TextButton(
-                    onPressed: () async {
-                      final now = DateTime.now();
-                      final picked = await showDatePicker(
-                        context: context,
-                        initialDate: selectedDate ?? now,
-                        firstDate: now,
-                        lastDate: DateTime(now.year + 2), // allow 2 years ahead
-                      );
-                      if (picked != null) {
-                        setState(() => selectedDate = picked);
-                      }
-                    },
+                  SizedBox(height: 6),
+                  Container(
+                    padding: EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
                     child: Text(
-                      selectedDate != null
-                          ? '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}'
-                          : 'Pick a date',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: Color(0xFF0064D2),
-                        fontWeight: FontWeight.w600,
-                      ),
+                      _travelDateController
+                          .text, // already formatted dd/MM/yyyy
+                      style: TextStyle(fontSize: 15),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
-              if (selectedDate != null)
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'End Date: ${selectedDate!.add(Duration(days: pkg.duration - 1)).day}/'
-                      '${selectedDate!.add(Duration(days: pkg.duration - 1)).month}/'
-                      '${selectedDate!.add(Duration(days: pkg.duration - 1)).year}',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF687089),
-                      ),
-                    ),
-                  ],
-                ),
+
+              // if (selectedDate != null)
+              //   Row(
+              //     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              //     children: [
+              //       Text(
+              //         'End Date: ${selectedDate!.add(Duration(days: pkg.duration - 1)).day}/'
+              //         '${selectedDate!.add(Duration(days: pkg.duration - 1)).month}/'
+              //         '${selectedDate!.add(Duration(days: pkg.duration - 1)).year}',
+              //         style: const TextStyle(
+              //           fontSize: 14,
+              //           color: Color(0xFF687089),
+              //         ),
+              //       ),
+              //     ],
+              //   ),
             ],
           ),
         ),

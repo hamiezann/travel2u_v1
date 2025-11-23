@@ -229,7 +229,7 @@ class _BookingPage3State extends State<BookingPage3> {
           _buildInfoRow(
             Icons.location_on_outlined,
             "Address",
-            userData['address'] ?? 'Not provided',
+            userData['mainUser']['address'] ?? 'Not provided',
           ),
         ],
       ),

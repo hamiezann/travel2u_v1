@@ -296,6 +296,7 @@ class _ManageUserPageState extends State<ManageUserPage>
                     'email': email,
                     'phone': phone,
                     'role': role,
+                    'isActive': true,
                     'updatedAt': FieldValue.serverTimestamp(),
                   };
 
@@ -357,7 +358,7 @@ class _ManageUserPageState extends State<ManageUserPage>
       appBar: AppBar(
         title: const Text(
           'Manage Users',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: TextStyle(color: Colors.white),
         ),
         backgroundColor: Colors.blue.shade900,
         elevation: 0,
@@ -576,6 +577,32 @@ class _ManageUserPageState extends State<ManageUserPage>
               // Action Buttons
               Column(
                 children: [
+                  Switch(
+                    value: userData['isActive'] ?? true,
+                    activeColor: Colors.blue.shade700,
+                    inactiveThumbColor: Colors.red.shade700,
+                    onChanged: (value) async {
+                      try {
+                        await _firestore.collection('users').doc(userId).update(
+                          {'isActive': value},
+                        );
+
+                        setState(() {
+                          userData['isActive'] = value;
+                        });
+
+                        _showSnackBar(
+                          value ? "Account activated" : "Account deactivated",
+                        );
+                      } catch (e) {
+                        _showSnackBar(
+                          'Error updating status: $e',
+                          isError: true,
+                        );
+                      }
+                    },
+                  ),
+
                   IconButton(
                     icon: Icon(
                       Icons.edit_outlined,

@@ -21,19 +21,15 @@ class BookingPage2 extends StatefulWidget {
 class BookingPage2State extends State<BookingPage2> {
   final _formKey = GlobalKey<FormState>();
   bool _loading = true;
-
-  // ---------------------------------------------------------------------------
-  // BOOKING DATA MODEL (All info stored here)
-  // ---------------------------------------------------------------------------
   final Map<String, dynamic> _bookingData = {
     "mainUser": {
       "name": "",
       "email": "",
       "phone": "",
+      "address": "",
       "foodPreference": <String>[],
       "preferredActivities": <String>[],
       "avoidPreference": <String>[],
-      // "travelPace": "",
     },
     "travelers": <Map<String, String>>[],
   };
@@ -50,9 +46,6 @@ class BookingPage2State extends State<BookingPage2> {
     };
   }
 
-  // ---------------------------------------------------------------------------
-  // Firestore taxonomy
-  // ---------------------------------------------------------------------------
   List<String> foodTypes = [];
   List<String> activityTypes = [];
 
@@ -62,9 +55,6 @@ class BookingPage2State extends State<BookingPage2> {
     _loadEverything();
   }
 
-  // ===========================================================================
-  // LOAD EVERYTHING
-  // ===========================================================================
   Future<void> _loadEverything() async {
     setState(() => _loading = true);
 
@@ -107,6 +97,7 @@ class BookingPage2State extends State<BookingPage2> {
         "${d['firstName'] ?? ''} ${d['lastName'] ?? ''}".trim();
     _bookingData["mainUser"]["email"] = d["email"] ?? "";
     _bookingData["mainUser"]["phone"] = d["phone"] ?? "";
+    _bookingData["mainUser"]["address"] = d["address"] ?? "";
   }
 
   Future<void> _loadUserPrefs() async {
@@ -155,7 +146,7 @@ class BookingPage2State extends State<BookingPage2> {
     final count = widget.numTravelers - 1;
     _bookingData["travelers"] = List.generate(
       count,
-      (_) => {"name": "", "relationship": ""},
+      (_) => {"name": "", "relationship": "", "icNumber": ""},
     );
   }
 
@@ -171,9 +162,6 @@ class BookingPage2State extends State<BookingPage2> {
     });
   }
 
-  // ===========================================================================
-  // SAVE PREFERENCES (Firestore)
-  // ===========================================================================
   Future<void> savePreferencesToFirestore() async {
     try {
       final user = FirebaseAuth.instance.currentUser;
@@ -202,9 +190,6 @@ class BookingPage2State extends State<BookingPage2> {
     }
   }
 
-  // ===========================================================================
-  // MAIN BUILD
-  // ===========================================================================
   @override
   Widget build(BuildContext context) {
     if (_loading) {
@@ -239,24 +224,17 @@ class BookingPage2State extends State<BookingPage2> {
               initial: _bookingData["mainUser"]["phone"],
               onChanged: (v) => _bookingData["mainUser"]["phone"] = v,
             ),
+            _gap(),
+            _textField(
+              label: "Address",
+              keyboard: TextInputType.streetAddress,
+              initial: _bookingData["mainUser"]["address"],
+              onChanged: (v) => _bookingData["mainUser"]["address"] = v,
+            ),
 
             const SizedBox(height: 20),
             const Divider(),
 
-            // ======================= PREFERENCES =======================
-            // _title("Preferences"),
-            // _gap(),
-            // _dropdown(
-            //   label: "Travel Pace",
-            //   items: activityTypes,
-            //   value:
-            //       _bookingData["mainUser"]["travelPace"].isEmpty
-            //           ? null
-            //           : _bookingData["mainUser"]["travelPace"],
-            //   onChanged: (v) {
-            //     setState(() => _bookingData["mainUser"]["travelPace"] = v!);
-            //   },
-            // ),
             _gap(),
 
             _multiSelect(
@@ -305,7 +283,6 @@ class BookingPage2State extends State<BookingPage2> {
               },
             ),
 
-            // ======================= TRAVELERS =========================
             if (widget.numTravelers > 1) ...[
               const SizedBox(height: 30),
               const Divider(),
@@ -325,10 +302,6 @@ class BookingPage2State extends State<BookingPage2> {
       ),
     );
   }
-
-  // ===========================================================================
-  // BUILD HELPERS
-  // ===========================================================================
 
   Widget _title(String t) => Text(
     t,
@@ -436,6 +409,12 @@ class BookingPage2State extends State<BookingPage2> {
             label: "Relationship",
             initial: _bookingData["travelers"][i]["relationship"],
             onChanged: (v) => _bookingData["travelers"][i]["relationship"] = v,
+          ),
+          _gap(),
+          _textField(
+            label: "IC No",
+            initial: _bookingData["travelers"][i]["icNumber"],
+            onChanged: (v) => _bookingData["travellers"][i]["icNumber"] = v,
           ),
         ],
       ),
