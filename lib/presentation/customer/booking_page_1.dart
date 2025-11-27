@@ -61,7 +61,6 @@ class _BookingPage1State extends State<BookingPage1> {
 
   @override
   void dispose() {
-    // _travelerController.dispose();
     super.dispose();
   }
 
@@ -344,6 +343,7 @@ class _BookingPage1State extends State<BookingPage1> {
                 onSaved: (value) {
                   // final numTravelers = int.tryParse(value ?? '') ?? 1;
                   widget.onDataChanged({
+                    "packageName": pkg.name,
                     "name": nameCtrl.text,
                     "email": emailCtrl.text,
                     "phone": phoneCtrl.text,

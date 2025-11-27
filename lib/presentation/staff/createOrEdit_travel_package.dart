@@ -243,10 +243,17 @@ class _CreateOrEditTravelPackagePageState
               .collection('users')
               .where('role', isEqualTo: 'staff')
               .get();
-
+      debugPrint(
+        querySnapshot.docs.map((doc) => doc.data()).toList().toString(),
+      );
       final names =
           querySnapshot.docs
-              .map((doc) => doc['firstName'] ?? '') // adjust field if needed
+              .map((doc)
+              //  => doc['firstName'] ?? ''
+              {
+                final data = doc.data();
+                return data['firstName'] ?? data['userName'] ?? '';
+              })
               .where((name) => name.isNotEmpty)
               .toList();
 
@@ -825,6 +832,7 @@ class _CreateOrEditTravelPackagePageState
         ),
         const SizedBox(height: 16),
         Autocomplete<String>(
+          initialValue: TextEditingValue(text: _tourGuideController.text),
           optionsBuilder: (TextEditingValue textEditingValue) {
             if (textEditingValue.text.isEmpty) {
               return const Iterable<String>.empty();
@@ -844,10 +852,10 @@ class _CreateOrEditTravelPackagePageState
             FocusNode fieldFocusNode,
             VoidCallback onFieldSubmitted,
           ) {
-            _tourGuideController = fieldTextEditingController;
+            // _tourGuideController = fieldTextEditingController;
             return TextFormField(
-              // controller: fieldTextEditingController,
-              controller: _tourGuideController,
+              controller: fieldTextEditingController,
+              // controller: _tourGuideController,
               focusNode: fieldFocusNode,
               decoration: InputDecoration(
                 labelText: 'Tour Guide Name',

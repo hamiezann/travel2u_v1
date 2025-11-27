@@ -27,6 +27,8 @@ class BookingPage2State extends State<BookingPage2> {
       "email": "",
       "phone": "",
       "address": "",
+      "passportNo": "",
+      "icNo": "",
       "foodPreference": <String>[],
       "preferredActivities": <String>[],
       "avoidPreference": <String>[],
@@ -59,7 +61,7 @@ class BookingPage2State extends State<BookingPage2> {
     setState(() => _loading = true);
 
     await _loadTaxonomy(); // foodTypes, activityTypes
-    await _loadUserProfile(); // user name, email, phone
+    await _loadUserProfile(); // user name, email, phone, passno
     await _loadUserPrefs(); // saved preferences
     _restoreInitialData(); // from Page 1 → Page 2 navigation
 
@@ -98,6 +100,8 @@ class BookingPage2State extends State<BookingPage2> {
     _bookingData["mainUser"]["email"] = d["email"] ?? "";
     _bookingData["mainUser"]["phone"] = d["phone"] ?? "";
     _bookingData["mainUser"]["address"] = d["address"] ?? "";
+    _bookingData["mainUser"]["passportNo"] = d["passportNo"] ?? "";
+    _bookingData["mainUser"]["icNo"] = d["icNo"] ?? "";
   }
 
   Future<void> _loadUserPrefs() async {
@@ -146,7 +150,7 @@ class BookingPage2State extends State<BookingPage2> {
     final count = widget.numTravelers - 1;
     _bookingData["travelers"] = List.generate(
       count,
-      (_) => {"name": "", "relationship": "", "icNumber": ""},
+      (_) => {"name": "", "relationship": "", "icNumber": "", "passportNo": ""},
     );
   }
 
@@ -186,7 +190,7 @@ class BookingPage2State extends State<BookingPage2> {
       }
     } catch (e) {
       // Handle errors if necessary
-      print("Error saving preferences: $e");
+      // print("Error saving preferences: $e");
     }
   }
 
@@ -209,19 +213,38 @@ class BookingPage2State extends State<BookingPage2> {
               label: "Full Name",
               initial: _bookingData["mainUser"]["name"],
               onChanged: (v) => _bookingData["mainUser"]["name"] = v,
+              requiredField: true,
             ),
             _gap(),
             _textField(
               label: "Email",
               keyboard: TextInputType.emailAddress,
               initial: _bookingData["mainUser"]["email"],
+              requiredField: true,
               onChanged: (v) => _bookingData["mainUser"]["email"] = v,
+            ),
+            _gap(),
+            _textField(
+              label: "Identification No",
+              // keyboard: TextInputType.emailAddress,
+              initial: _bookingData["mainUser"]["icNo"],
+              onChanged: (v) => _bookingData["mainUser"]["icNo"] = v,
+              requiredField: true,
+            ),
+            _gap(),
+            _textField(
+              label: "Passport No",
+              // keyboard: TextInputType.emailAddress,
+              initial: _bookingData["mainUser"]["passportNo"],
+              requiredField: true,
+              onChanged: (v) => _bookingData["mainUser"]["passportNo"] = v,
             ),
             _gap(),
             _textField(
               label: "Phone",
               keyboard: TextInputType.phone,
               initial: _bookingData["mainUser"]["phone"],
+              requiredField: true,
               onChanged: (v) => _bookingData["mainUser"]["phone"] = v,
             ),
             _gap(),
@@ -229,6 +252,7 @@ class BookingPage2State extends State<BookingPage2> {
               label: "Address",
               keyboard: TextInputType.streetAddress,
               initial: _bookingData["mainUser"]["address"],
+              requiredField: true,
               onChanged: (v) => _bookingData["mainUser"]["address"] = v,
             ),
 
@@ -315,38 +339,44 @@ class BookingPage2State extends State<BookingPage2> {
     String? initial,
     TextInputType? keyboard,
     required Function(String) onChanged,
+    bool requiredField = true,
   }) {
     return TextFormField(
       initialValue: initial,
       keyboardType: keyboard,
+
       decoration: InputDecoration(
         labelText: label,
         border: OutlineInputBorder(),
       ),
-      validator: (v) => (v == null || v.isEmpty) ? "Please enter $label" : null,
+      validator:
+          requiredField
+              ? (v) => (v == null || v.isEmpty) ? "Please enter $label" : null
+              : null,
+
       onChanged: onChanged,
     );
   }
 
-  Widget _dropdown({
-    required String label,
-    required List<String> items,
-    String? value,
-    Function(String?)? onChanged,
-  }) {
-    return DropdownButtonFormField<String>(
-      value: value,
-      decoration: InputDecoration(
-        border: OutlineInputBorder(),
-        labelText: label,
-      ),
-      items:
-          items.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-      onChanged: onChanged,
-      validator:
-          (v) => (v == null || v.isEmpty) ? "Please select $label" : null,
-    );
-  }
+  // Widget _dropdown({
+  //   required String label,
+  //   required List<String> items,
+  //   String? value,
+  //   Function(String?)? onChanged,
+  // }) {
+  //   return DropdownButtonFormField<String>(
+  //     value: value,
+  //     decoration: InputDecoration(
+  //       border: OutlineInputBorder(),
+  //       labelText: label,
+  //     ),
+  //     items:
+  //         items.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+  //     onChanged: onChanged,
+  //     validator:
+  //         (v) => (v == null || v.isEmpty) ? "Please select $label" : null,
+  //   );
+  // }
 
   Widget _multiSelect({
     required String label,
@@ -402,54 +432,60 @@ class BookingPage2State extends State<BookingPage2> {
           _textField(
             label: "Full Name",
             initial: _bookingData["travelers"][i]["name"],
+            requiredField: true,
             onChanged: (v) => _bookingData["travelers"][i]["name"] = v,
           ),
           _gap(),
           _textField(
             label: "Relationship",
             initial: _bookingData["travelers"][i]["relationship"],
+            requiredField: true,
             onChanged: (v) => _bookingData["travelers"][i]["relationship"] = v,
           ),
           _gap(),
           _textField(
             label: "IC No",
             initial: _bookingData["travelers"][i]["icNumber"],
-            onChanged: (v) => _bookingData["travellers"][i]["icNumber"] = v,
+            keyboard: TextInputType.number,
+            requiredField: true,
+            onChanged: (v) => _bookingData["travelers"][i]["icNumber"] = v,
+          ),
+          _gap(),
+          _textField(
+            label: "Passport No",
+            requiredField: true,
+            initial: _bookingData["travelers"][i]["passportNo"],
+            onChanged: (v) => _bookingData["travelers"][i]["passportNo"] = v,
           ),
         ],
       ),
     );
   }
 
-  Widget _saveButton() {
-    return Center(
-      child: ElevatedButton.icon(
-        icon: const Icon(Icons.save),
-        label: const Text("Save Details"),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.blue,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-        ),
-        onPressed: () async {
-          if (!_formKey.currentState!.validate()) return;
-
-          // Save firestore prefs
-          await savePreferencesToFirestore();
-
-          // Pass booking data back to parent
-          widget.onDataSaved(_bookingData);
-
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text("User details added successfully!"),
-                backgroundColor: Colors.green,
-              ),
-            );
-          }
-        },
-      ),
-    );
-  }
+  // Widget _saveButton() {
+  //   return Center(
+  //     child: ElevatedButton.icon(
+  //       icon: const Icon(Icons.save),
+  //       label: const Text("Save Details"),
+  //       style: ElevatedButton.styleFrom(
+  //         backgroundColor: Colors.blue,
+  //         foregroundColor: Colors.white,
+  //         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+  //       ),
+  //       onPressed: () async {
+  //         if (!_formKey.currentState!.validate()) return;
+  //         await savePreferencesToFirestore();
+  //         widget.onDataSaved(_bookingData);
+  //         if (mounted) {
+  //           ScaffoldMessenger.of(context).showSnackBar(
+  //             const SnackBar(
+  //               content: Text("User details added successfully!"),
+  //               backgroundColor: Colors.green,
+  //             ),
+  //           );
+  //         }
+  //       },
+  //     ),
+  //   );
+  // }
 }

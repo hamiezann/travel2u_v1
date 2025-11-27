@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:travel2u_v1/core/models/travel_package.dart';
+import 'package:travel2u_v1/presentation/customer/package_detail_page.dart';
 
 class ManageTravelPage extends StatefulWidget {
   const ManageTravelPage({super.key});
@@ -25,27 +27,40 @@ class _ManageTravelPageState extends State<ManageTravelPage> {
 
   Future<void> _fetchTravelPackages() async {
     final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
     travelPackages.clear();
+    setState(() => isLoading = true);
+
     try {
-      QuerySnapshot querySnapshot =
-          await _firestore
-              .collection('travel_packages')
-              .where('creatorId', isEqualTo: user?.uid)
-              .get();
-      setState(() {
-        for (var doc in querySnapshot.docs) {
-          travelPackages[doc.id] = doc.data();
-        }
-        isLoading = false;
-      });
+      // 🔹 1. Fetch current user role
+      final userDoc = await _firestore.collection('users').doc(user.uid).get();
+
+      final role = userDoc.data()?['role'] ?? 'staff';
+
+      QuerySnapshot querySnapshot;
+      if (role == 'manager') {
+        querySnapshot = await _firestore.collection('travel_packages').get();
+      } else {
+        querySnapshot =
+            await _firestore
+                .collection('travel_packages')
+                .where('creatorId', isEqualTo: user.uid)
+                .get();
+      }
+
+      // 🔹 3. Store packages
+      for (var doc in querySnapshot.docs) {
+        travelPackages[doc.id] = doc.data();
+      }
     } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        isLoading = false;
-      });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error fetching packages: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error fetching packages: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => isLoading = false);
     }
   }
 
@@ -179,22 +194,6 @@ class _ManageTravelPageState extends State<ManageTravelPage> {
             "Create your first travel package",
             style: TextStyle(fontSize: 14, color: Colors.grey[600]),
           ),
-          const SizedBox(height: 24),
-          ElevatedButton.icon(
-            onPressed: () {
-              Navigator.pushNamed(
-                context,
-                '/add-travel-package',
-              ).then((_) => _fetchTravelPackages());
-            },
-            icon: const Icon(Icons.add),
-            label: const Text('Add Package'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _staffColor,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            ),
-          ),
         ],
       ),
     );
@@ -310,10 +309,74 @@ class _ManageTravelPageState extends State<ManageTravelPage> {
                 const SizedBox(height: 16),
 
                 // Action Buttons
+                // Row(
+                //   children: [
+                //     Expanded(
+                //       child: OutlinedButton.icon(
+                //         onPressed: () {
+                //           Navigator.pushNamed(
+                //             context,
+                //             '/update-travel-package',
+                //             arguments: {'id': key},
+                //           ).then((_) => _fetchTravelPackages());
+                //         },
+                //         icon: const Icon(Icons.edit_outlined, size: 14),
+                //         label: const Text('Edit'),
+                //         style: OutlinedButton.styleFrom(
+                //           foregroundColor: _staffColor,
+                //           side: BorderSide(color: _staffColor),
+                //           shape: RoundedRectangleBorder(
+                //             borderRadius: BorderRadius.circular(10),
+                //           ),
+                //         ),
+                //       ),
+                //     ),
+                //     const SizedBox(width: 4),
+                //     Expanded(
+                //       child: OutlinedButton.icon(
+                //         onPressed: () {
+                //           Navigator.push(
+                //             context,
+                //             MaterialPageRoute(
+                //               builder:
+                //                   (_) => PackageDetailPage(
+                //                     package: TravelPackage.fromJson(package),
+                //                   ),
+                //             ),
+                //           );
+                //         },
+                //         icon: const Icon(Icons.edit_outlined, size: 14),
+                //         label: const Text('View'),
+                //         style: OutlinedButton.styleFrom(
+                //           foregroundColor: _staffColor,
+                //           side: BorderSide(color: _staffColor),
+                //           shape: RoundedRectangleBorder(
+                //             borderRadius: BorderRadius.circular(10),
+                //           ),
+                //         ),
+                //       ),
+                //     ),
+                //     const SizedBox(width: 4),
+                //     Expanded(
+                //       child: OutlinedButton.icon(
+                //         onPressed: () => _handleDelete(key, packageName),
+                //         icon: const Icon(Icons.delete_outline, size: 14),
+                //         label: const Text('Delete'),
+                //         style: OutlinedButton.styleFrom(
+                //           foregroundColor: Colors.red,
+                //           side: const BorderSide(color: Colors.red),
+                //           shape: RoundedRectangleBorder(
+                //             borderRadius: BorderRadius.circular(10),
+                //           ),
+                //         ),
+                //       ),
+                //     ),
+                //   ],
+                // ),
                 Row(
                   children: [
                     Expanded(
-                      child: OutlinedButton.icon(
+                      child: ElevatedButton.icon(
                         onPressed: () {
                           Navigator.pushNamed(
                             context,
@@ -322,27 +385,79 @@ class _ManageTravelPageState extends State<ManageTravelPage> {
                           ).then((_) => _fetchTravelPackages());
                         },
                         icon: const Icon(Icons.edit_outlined, size: 18),
-                        label: const Text('Edit'),
-                        style: OutlinedButton.styleFrom(
+                        label: const Text(
+                          'Edit',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
                           foregroundColor: _staffColor,
-                          side: BorderSide(color: _staffColor),
+                          side: BorderSide(color: _staffColor, width: 1.5),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(16),
                           ),
                         ),
                       ),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: OutlinedButton.icon(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder:
+                                  (_) => PackageDetailPage(
+                                    package: TravelPackage.fromJson(package),
+                                  ),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.visibility_outlined, size: 18),
+                        label: const Text(
+                          'View',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          foregroundColor: Colors.blue.shade700,
+                          side: BorderSide(
+                            color: Colors.blue.shade700,
+                            width: 1.5,
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ElevatedButton.icon(
                         onPressed: () => _handleDelete(key, packageName),
                         icon: const Icon(Icons.delete_outline, size: 18),
-                        label: const Text('Delete'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.red,
-                          side: const BorderSide(color: Colors.red),
+                        label: const Text(
+                          'Delete',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          foregroundColor: Colors.red.shade600,
+                          side: BorderSide(
+                            color: Colors.red.shade600,
+                            width: 1.5,
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(16),
                           ),
                         ),
                       ),

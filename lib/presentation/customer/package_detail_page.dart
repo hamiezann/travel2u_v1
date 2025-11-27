@@ -2,6 +2,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:travel2u_v1/core/models/travel_package.dart';
+import 'package:travel2u_v1/core/services/basic_service.dart';
 import 'package:travel2u_v1/presentation/auth/login.dart';
 
 class PackageDetailPage extends StatefulWidget {
@@ -14,7 +15,17 @@ class PackageDetailPage extends StatefulWidget {
 }
 
 class _PackageDetailPageState extends State<PackageDetailPage> {
-  final user = FirebaseAuth.instance.currentUser;
+  // final user = FirebaseAuth.instance.currentUser;
+  final BasicService _basicService = BasicService();
+  late Future<String?> role;
+  late Future<String?> userId;
+
+  @override
+  void initState() {
+    super.initState();
+    userId = _basicService.getUserId();
+    role = userId.then((id) => _basicService.getUserRole(id ?? ""));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -459,60 +470,86 @@ class _PackageDetailPageState extends State<PackageDetailPage> {
                 ],
               ),
             ),
-            (user != null)
-                ?
-                // Book Button
-                ElevatedButton(
-                  onPressed: () {
-                    // _showBookingDialog(context);
-                    print(widget.package.id);
-                    Navigator.pushNamed(
-                      context,
-                      '/booking-page',
-                      arguments: {'packageId': widget.package.id},
+            // (user != null)
+            SizedBox(
+              height: 50,
+              child: FutureBuilder<String?>(
+                future: role,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  final userRole = snapshot.data;
+
+                  // Not logged in
+                  if (userRole == null) {
+                    return ElevatedButton(
+                      onPressed: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(builder: (context) => LoginPage()),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey[400],
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 40,
+                          vertical: 16,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        'Login to Book',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0064D2),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 40,
-                      vertical: 16,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: const Text(
-                    'Book Now',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
-                )
-                : ElevatedButton(
-                  onPressed: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => LoginPage()),
+                  }
+
+                  // Customer
+                  if (userRole == "customer") {
+                    return ElevatedButton(
+                      onPressed: () {
+                        Navigator.pushNamed(
+                          context,
+                          '/booking-page',
+                          arguments: {'packageId': widget.package.id},
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF0064D2),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 14,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        'Book Now',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.grey[400],
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 40,
-                      vertical: 16,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: const Text(
-                    'Login to Book',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
-                ),
+                  }
+
+                  // Staff or Manager → no button
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
           ],
         ),
       ),

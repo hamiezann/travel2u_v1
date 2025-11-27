@@ -1,8 +1,10 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:travel2u_v1/core/services/auth_service.dart';
 import 'package:travel2u_v1/presentation/auth/change_email_password_page.dart';
 import 'package:travel2u_v1/presentation/customer/booking_list_page.dart';
+import 'package:travel2u_v1/presentation/customer/review_listing_page.dart';
 import 'package:travel2u_v1/presentation/customer/travel_package_list_page.dart';
 import 'package:travel2u_v1/presentation/customer/wishlist_page.dart';
 import 'package:travel2u_v1/presentation/widgets/custom_message_popup.dart';
@@ -13,7 +15,6 @@ class CDashboardPage extends StatefulWidget {
   final String? name;
   final String? email;
   final String? role;
-  // const CDashboardPage({super.key});
   const CDashboardPage({
     super.key,
     this.userId,
@@ -30,11 +31,15 @@ class _CDashboardPageState extends State<CDashboardPage> {
   final _authService = AuthService();
   int _selectedIndex = 0;
   bool isLoggedIn = false;
+  Map<String, dynamic> _profile = {};
 
   @override
   void initState() {
     super.initState();
     final user = FirebaseAuth.instance.currentUser;
+    // if (widget.userId.isNotEmpty) {
+    _fetchProfile();
+    // }
     setState(() {
       isLoggedIn = user != null;
     });
@@ -95,31 +100,108 @@ class _CDashboardPageState extends State<CDashboardPage> {
 
     if (index == 1) return MyTripsPage();
     // if (index == 2) return ItinerariesPage();
-
     return PackagesPage();
+  }
+
+  Future<void> _fetchProfile() async {
+    final doc =
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(widget.userId)
+            .get();
+
+    if (doc.exists) {
+      setState(() {
+        _profile = doc.data()!;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'IPLANUGO',
-          style: TextStyle(fontWeight: FontWeight.w600, letterSpacing: 0.5),
-        ),
+        title:
+            isLoggedIn
+                ? Row(
+                  children: [
+                    // --- Avatar ---
+                    CircleAvatar(
+                      radius: 22,
+                      backgroundColor: Colors.white,
+                      backgroundImage:
+                          _profile['imageUrl'] != null
+                              ? NetworkImage(_profile['imageUrl'])
+                              : null,
+                      child:
+                          _profile['imageUrl'] == null
+                              ? Text(
+                                (widget.name ?? "U")[0].toUpperCase(),
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.blue,
+                                ),
+                              )
+                              : null,
+                    ),
+
+                    const SizedBox(width: 12),
+
+                    // --- Greeting Text ---
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          "Hello, how are you?",
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          _profile['firstName'] ?? widget.name ?? "User",
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                )
+                : const Text(
+                  'IPLANUGO',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+
+        // title: const Text(
+        //   'IPLANUGO',
+        //   style: TextStyle(fontWeight: FontWeight.w600, letterSpacing: 0.5),
+        // ),
         backgroundColor: Color(0xFF0064D2),
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
           if (isLoggedIn) ...[
             PopupMenuButton<int>(
+              color: Colors.white,
               icon: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  color: Colors.white,
+                  // color: Colors.white.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Icon(Icons.person_outline_rounded, size: 22),
+                child: const Icon(
+                  Icons.settings_outlined,
+                  size: 22,
+                  color: Colors.blueGrey,
+                ),
               ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -153,6 +235,17 @@ class _CDashboardPageState extends State<CDashboardPage> {
                       value: 3,
                       child: ListTile(
                         leading: Icon(
+                          Icons.star_half_rounded,
+                          color: Colors.blue,
+                        ),
+                        title: Text('My Review'),
+                      ),
+                    ),
+                    PopupMenuDivider(),
+                    PopupMenuItem<int>(
+                      value: 4,
+                      child: ListTile(
+                        leading: Icon(
                           Icons.security_outlined,
                           color: Colors.blue,
                         ),
@@ -175,6 +268,13 @@ class _CDashboardPageState extends State<CDashboardPage> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
+                      builder: (_) => ReviewListingPage(uid: widget.userId!),
+                    ),
+                  );
+                } else if (value == 4) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
                       builder: (_) => ChangeAuthenticationPage(),
                     ),
                   );
@@ -186,10 +286,14 @@ class _CDashboardPageState extends State<CDashboardPage> {
               icon: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Icon(Icons.logout_rounded, size: 22),
+                child: const Icon(
+                  Icons.logout_rounded,
+                  size: 22,
+                  color: Colors.blueGrey,
+                ),
               ),
               onPressed: () async {
                 await showDialog(

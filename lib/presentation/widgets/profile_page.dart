@@ -1,6 +1,10 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:travel2u_v1/presentation/widgets/custom_card.dart';
 import 'package:travel2u_v1/presentation/widgets/custom_textfield.dart';
 
@@ -11,9 +15,10 @@ class UserProfile {
   String address;
   String country;
   String city;
-  // String password;
   DateTime? dateOfBirth;
   String status;
+  String passportNo;
+  String imageUrl;
   UserProfile({
     this.firstName = '',
     this.lastName = '',
@@ -21,9 +26,10 @@ class UserProfile {
     this.address = '',
     this.country = '',
     this.city = '',
-    // this.password = '',
     this.dateOfBirth,
     this.status = 'Active',
+    this.passportNo = '',
+    this.imageUrl = '',
   });
 }
 
@@ -45,14 +51,15 @@ class _ProfilePageState extends State<ProfilePage> {
     address: '',
     country: '',
     city: '',
-    // password: '',
+    passportNo: '',
     dateOfBirth: DateTime.now(),
     status: '',
+    imageUrl: '',
   );
   bool _isLoading = false;
-  // bool _obscurePassword = true;
-  // bool _obscureOldPassword = true;
-  // bool _obscureConfirmPassword = true;
+  bool _isUploadingImage = false;
+  File? _selectedImageFile;
+  String? _oldImageUrl;
 
   // Controllers
   late TextEditingController _firstNameController;
@@ -61,10 +68,9 @@ class _ProfilePageState extends State<ProfilePage> {
   late TextEditingController _addressController;
   late TextEditingController _countryController;
   late TextEditingController _cityController;
-  // late TextEditingController _passwordController;
-  // late TextEditingController _confirmPasswordController;
-  // late TextEditingController _oldPasswordController;
+  late TextEditingController _passportNoController;
   late TextEditingController _dobController;
+  late TextEditingController _imageUrlController;
   String? _profileImageUrl;
   String? userRole;
 
@@ -79,15 +85,14 @@ class _ProfilePageState extends State<ProfilePage> {
     _addressController = TextEditingController(text: _profile.address);
     _countryController = TextEditingController(text: _profile.country);
     _cityController = TextEditingController(text: _profile.city);
-    // _confirmPasswordController = TextEditingController();
-    // _passwordController = TextEditingController();
-    // _oldPasswordController = TextEditingController();
+    _passportNoController = TextEditingController(text: _profile.passportNo);
     _dobController = TextEditingController(
       text:
           _profile.dateOfBirth != null
               ? '${_profile.dateOfBirth!.day}/${_profile.dateOfBirth!.month}/${_profile.dateOfBirth!.year}'
               : '',
     );
+    _imageUrlController = TextEditingController(text: _profile.imageUrl);
   }
 
   @override
@@ -98,10 +103,9 @@ class _ProfilePageState extends State<ProfilePage> {
     _addressController.dispose();
     _countryController.dispose();
     _cityController.dispose();
-    // _passwordController.dispose();
-    // _oldPasswordController.dispose();
-    // _confirmPasswordController.dispose();
+    _passportNoController.dispose();
     _dobController.dispose();
+    _imageUrlController.dispose();
     super.dispose();
   }
 
@@ -154,6 +158,8 @@ class _ProfilePageState extends State<ProfilePage> {
           dateOfBirth:
               data['dob'] != null ? (data['dob'] as Timestamp).toDate() : null,
           status: data['status'] ?? 'Active',
+          passportNo: data['passportNo'] ?? '',
+          imageUrl: data['imageUrl'] ?? '',
         );
         _firstNameController.text = _profile.firstName;
         _lastNameController.text = _profile.lastName;
@@ -161,10 +167,12 @@ class _ProfilePageState extends State<ProfilePage> {
         _addressController.text = _profile.address;
         _countryController.text = _profile.country;
         _cityController.text = _profile.city;
+        _passportNoController.text = _profile.passportNo;
         _dobController.text =
             _profile.dateOfBirth != null
                 ? '${_profile.dateOfBirth!.day}/${_profile.dateOfBirth!.month}/${_profile.dateOfBirth!.year}'
                 : '';
+        _imageUrlController.text = _profile.imageUrl;
       });
     } catch (e) {
       debugPrint('Error fetching user profile: $e');
@@ -218,6 +226,7 @@ class _ProfilePageState extends State<ProfilePage> {
         );
         return;
       }
+
       final profileCollection = FirebaseFirestore.instance.collection('users');
       final profileData = {
         'firstName': _profile.firstName,
@@ -228,68 +237,24 @@ class _ProfilePageState extends State<ProfilePage> {
         'city': _profile.city,
         'country': _profile.country,
         'updatedAt': FieldValue.serverTimestamp(),
+        'passportNo': _profile.passportNo,
       };
-
+      if (_selectedImageFile != null) {
+        final newImageUrl = await uploadImage(user.uid);
+        if (newImageUrl != null) {
+          profileData['imageUrl'] = newImageUrl;
+        }
+      }
       await profileCollection
           .doc(user.uid)
           .set(profileData, SetOptions(merge: true));
-
-      // final newPassword = _profile.password?.trim();
-      // final oldPassword = _oldPasswordController.text.trim();
-
-      // if (newPassword != null && newPassword.isNotEmpty) {
-      //   try {
-      //     if (oldPassword.isEmpty) {
-      //       throw FirebaseAuthException(
-      //         code: 'missing-old-password',
-      //         message: 'Please enter your old password to change it.',
-      //       );
-      //     }
-
-      //     final email = user.email;
-      //     if (email == null) {
-      //       throw Exception('User email not found.');
-      //     }
-
-      //     final cred = EmailAuthProvider.credential(
-      //       email: email,
-      //       password: oldPassword,
-      //     );
-
-      //     await user.reauthenticateWithCredential(cred);
-
-      //     await user.updatePassword(newPassword);
-
-      //     if (mounted) {
-      //       ScaffoldMessenger.of(context).showSnackBar(
-      //         const SnackBar(
-      //           content: Text('Password updated successfully!'),
-      //           backgroundColor: Colors.green,
-      //         ),
-      //       );
-      //     }
-      //   } on FirebaseAuthException catch (e) {
-      //     String message = 'Error updating password: ${e.message}';
-      //     if (e.code == 'wrong-password') {
-      //       message = 'The old password you entered is incorrect.';
-      //     } else if (e.code == 'requires-recent-login') {
-      //       message = 'Please log in again to change your password.';
-      //     } else if (e.code == 'missing-old-password') {
-      //       message = e.message!;
-      //     }
-
-      //     ScaffoldMessenger.of(
-      //       context,
-      //     ).showSnackBar(SnackBar(content: Text(message)));
-      //   }
-      // }
 
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Profile updated successfully!'),
-          backgroundColor: Colors.blue.shade900,
+          backgroundColor: Colors.blue.shade800,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
@@ -366,6 +331,19 @@ class _ProfilePageState extends State<ProfilePage> {
                       }
                       return null;
                     },
+                  ),
+                  const SizedBox(height: 16),
+                  CustomTextField(
+                    controller: _passportNoController,
+                    label: 'Passport No',
+                    icon: Icons.add_card_outlined,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Required';
+                      }
+                      return null;
+                    },
+                    onSaved: (value) => _profile.passportNo = value ?? '',
                   ),
                 ],
               ),
@@ -445,146 +423,6 @@ class _ProfilePageState extends State<ProfilePage> {
 
               const SizedBox(height: 32),
 
-              // Preferences Section
-              // if (userRole == "customer") ...[
-              //   _buildSectionHeader('Preferences'),
-              //   const SizedBox(height: 16),
-              //   CustomCard(
-              //     children: [
-              //       CustomDropdownField(
-              //         label: 'Preferred Travel Style',
-              //         icon: Icons.flight_outlined,
-              //         value:
-              //             _profile.preferredTravelStyle.isEmpty
-              //                 ? null
-              //                 : _profile.preferredTravelStyle,
-              //         items: _travelStyles,
-              //         onChanged: (value) {
-              //           setState(() {
-              //             _profile.preferredTravelStyle = value ?? '';
-              //           });
-              //         },
-              //         validator: (value) {
-              //           if (value == null || value.isEmpty) {
-              //             return 'Please select a travel style';
-              //           }
-              //           return null;
-              //         },
-              //       ),
-
-              //       // const SizedBox(height: 16),
-              //       // _buildDropdownField(
-              //       //   label: 'Account Status',
-              //       //   icon: Icons.verified_user_outlined,
-              //       //   value: _profile.status,
-              //       //   items: _statusOptions,
-              //       //   onChanged: (value) {
-              //       //     setState(() {
-              //       //       _profile.status = value ?? 'Active';
-              //       //     });
-              //       //   },
-              //       // ),
-              //     ],
-              //   ),
-              //   const SizedBox(height: 32),
-              // ],
-
-              // Security Section
-              // _buildSectionHeader('Security'),
-              // const SizedBox(height: 16),
-              // CustomCard(
-              //   children: [
-              //     CustomTextField(
-              //       controller: _oldPasswordController,
-              //       label: 'Old Password',
-              //       icon: Icons.lock_outline,
-              //       obscureText: _obscureOldPassword,
-              //       suffixIcon: IconButton(
-              //         onPressed: () {
-              //           setState(() {
-              //             _obscureOldPassword = !_obscureOldPassword;
-              //           });
-              //         },
-              //         icon: Icon(
-              //           _obscureOldPassword
-              //               ? Icons.visibility_outlined
-              //               : Icons.visibility_off_outlined,
-              //         ),
-              //       ),
-              //       validator: (value) {
-              //         if (_passwordController.text.isNotEmpty &&
-              //             (value == null || value.isEmpty)) {
-              //           return 'Please enter your old password to change to a new one.';
-              //         }
-              //         return null;
-              //       },
-              //     ),
-              //   ],
-              // ),
-              // const SizedBox(height: 16),
-              // CustomCard(
-              //   children: [
-              //     CustomTextField(
-              //       controller: _passwordController,
-              //       label: 'New Password',
-              //       icon: Icons.lock_outline,
-              //       obscureText: _obscurePassword,
-              //       suffixIcon: IconButton(
-              //         icon: Icon(
-              //           _obscurePassword
-              //               ? Icons.visibility_outlined
-              //               : Icons.visibility_off_outlined,
-              //         ),
-              //         onPressed: () {
-              //           setState(() {
-              //             _obscurePassword = !_obscurePassword;
-              //           });
-              //         },
-              //       ),
-              //       helperText: 'Leave blank to keep current password',
-              //       validator: (value) {
-              //         if (value != null && value.isNotEmpty) {
-              //           if (value.length < 8) {
-              //             return 'Password must be at least 8 characters';
-              //           }
-              //         }
-              //         return null;
-              //       },
-              //       onSaved: (value) {
-              //         if (value != null && value.isNotEmpty) {
-              //           _profile.password = value;
-              //         }
-              //       },
-              //     ),
-              //     const SizedBox(height: 16),
-              //     CustomTextField(
-              //       controller: _confirmPasswordController,
-              //       label: 'Confirm New Password',
-              //       icon: Icons.lock_outline,
-              //       obscureText: _obscureConfirmPassword,
-              //       suffixIcon: IconButton(
-              //         icon: Icon(
-              //           _obscureConfirmPassword
-              //               ? Icons.visibility_outlined
-              //               : Icons.visibility_off_outlined,
-              //         ),
-              //         onPressed: () {
-              //           setState(() {
-              //             _obscureConfirmPassword = !_obscureConfirmPassword;
-              //           });
-              //         },
-              //       ),
-              //       validator: (value) {
-              //         if (_passwordController.text.isNotEmpty) {
-              //           if (value != _passwordController.text) {
-              //             return 'Passwords do not match';
-              //           }
-              //         }
-              //         return null;
-              //       },
-              //     ),
-              //   ],
-              // ),
               const SizedBox(height: 32),
 
               // Save Button
@@ -623,7 +461,6 @@ class _ProfilePageState extends State<ProfilePage> {
                           ),
                 ),
               ),
-
               const SizedBox(height: 32),
             ],
           ),
@@ -666,15 +503,14 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
               child: ClipOval(
                 child:
-                    _profileImageUrl != null && _profileImageUrl!.isNotEmpty
-                        ? Image.network(
-                          _profileImageUrl!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return _buildProfileIcon();
-                          },
-                        )
-                        : _buildProfileIcon(),
+                    _selectedImageFile != null
+                        ? Image.file(_selectedImageFile!, fit: BoxFit.cover)
+                        : (_profile.imageUrl.isNotEmpty
+                            ? Image.network(
+                              _profile.imageUrl,
+                              fit: BoxFit.cover,
+                            )
+                            : _buildProfileIcon()),
               ),
             ),
             // Edit Button
@@ -682,7 +518,7 @@ class _ProfilePageState extends State<ProfilePage> {
               bottom: 0,
               right: 0,
               child: GestureDetector(
-                onTap: _pickImage,
+                onTap: pickImage,
                 child: Container(
                   width: 40,
                   height: 40,
@@ -696,6 +532,49 @@ class _ProfilePageState extends State<ProfilePage> {
                     color: Colors.white,
                     size: 20,
                   ),
+                  // ClipRRect(
+                  //   borderRadius: BorderRadius.circular(12),
+                  //   child:
+                  //       _isUploadingImage
+                  //           ? const Center(child: CircularProgressIndicator())
+                  //           : _selectedImageFile != null
+                  //           ? Image.file(_selectedImageFile!, fit: BoxFit.cover)
+                  //           : _profile.imageUrl.isNotEmpty
+                  //           ? Image.network(
+                  //             _profile.imageUrl,
+                  //             fit: BoxFit.cover,
+                  //             loadingBuilder: (context, child, progress) {
+                  //               if (progress == null) return child;
+                  //               return const Center(
+                  //                 child: CircularProgressIndicator(),
+                  //               );
+                  //             },
+                  //             errorBuilder: (context, error, trace) {
+                  //               return const Center(
+                  //                 child: Icon(Icons.broken_image, size: 50),
+                  //               );
+                  //             },
+                  //           )
+                  //           : Center(
+                  //             child: Column(
+                  //               mainAxisAlignment: MainAxisAlignment.center,
+                  //               children: [
+                  //                 Icon(
+                  //                   Icons.add_photo_alternate,
+                  //                   size: 48,
+                  //                   color: Colors.grey.shade400,
+                  //                 ),
+                  //                 const SizedBox(height: 8),
+                  //                 Text(
+                  //                   'Tap to upload',
+                  //                   style: TextStyle(
+                  //                     color: Colors.grey.shade600,
+                  //                   ),
+                  //                 ),
+                  //               ],
+                  //             ),
+                  //           ),
+                  // ),
                 ),
               ),
             ),
@@ -783,14 +662,14 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                ListTile(
-                  leading: Icon(Icons.camera_alt, color: Colors.blue.shade900),
-                  title: const Text('Take Photo'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _takePhoto();
-                  },
-                ),
+                // ListTile(
+                //   leading: Icon(Icons.camera_alt, color: Colors.blue.shade900),
+                //   title: const Text('Take Photo'),
+                //   onTap: () {
+                //     Navigator.pop(context);
+                //     _takePhoto();
+                //   },
+                // ),
                 ListTile(
                   leading: Icon(
                     Icons.photo_library,
@@ -809,44 +688,52 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  void _takePhoto() {
-    // Implement camera functionality
-    // You'll need image_picker package for this
-    // Example:
-    // final ImagePicker picker = ImagePicker();
-    // final XFile? photo = await picker.pickImage(source: ImageSource.camera);
-    // if (photo != null) {
-    //   setState(() {
-    //     _profileImageUrl = photo.path; // or upload to server and get URL
-    //   });
-    // }
+  Future<void> pickImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Camera feature - Add image_picker package'),
-        backgroundColor: Colors.blue.shade900,
-      ),
-    );
+    if (pickedFile == null) return;
+
+    setState(() {
+      _selectedImageFile = File(pickedFile.path);
+      _profileImageUrl = null; // temporary, until uploaded
+    });
   }
 
-  void _chooseFromGallery() {
-    // Implement gallery functionality
-    // You'll need image_picker package for this
-    // Example:
-    // final ImagePicker picker = ImagePicker();
-    // final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-    // if (image != null) {
-    //   setState(() {
-    //     _profileImageUrl = image.path; // or upload to server and get URL
-    //   });
-    // }
+  Future<String?> uploadImage(String userId) async {
+    if (_selectedImageFile == null) return null;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Gallery feature - Add image_picker package'),
-        backgroundColor: Colors.blue.shade900,
-      ),
-    );
+    try {
+      // Delete old image first (if exists)
+      if (_profile.imageUrl.isNotEmpty) {
+        _oldImageUrl = _profile.imageUrl;
+        try {
+          final oldRef = FirebaseStorage.instance.refFromURL(_oldImageUrl!);
+          await oldRef.delete();
+        } catch (e) {}
+      }
+
+      // Upload new image
+      final ref = FirebaseStorage.instance
+          .ref()
+          .child('user_profile_images')
+          .child(userId)
+          .child('profile.jpg');
+
+      await ref.putFile(_selectedImageFile!);
+      final imageUrl = await ref.getDownloadURL();
+
+      return imageUrl;
+    } catch (e) {
+      // print('Error uploading image: $e');
+      return null;
+    }
+  }
+
+  void _chooseFromGallery() async {
+    Navigator.pop(context);
+    await pickImage();
+    setState(() {});
   }
 
   void _removeImage() {

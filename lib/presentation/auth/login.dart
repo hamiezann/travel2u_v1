@@ -36,10 +36,12 @@ class _LoginPageState extends State<LoginPage> {
         emailController.text.trim(),
         passwordController.text,
       );
+
       if (mounted) {
-        Navigator.pushReplacement(
+        Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (_) => const RoleRedirect()),
+          MaterialPageRoute(builder: (context) => const RoleRedirect()),
+          (route) => false,
         );
       }
     } catch (e) {
@@ -73,24 +75,25 @@ class _LoginPageState extends State<LoginPage> {
                 children: [
                   // Logo/Icon
                   Container(
-                    padding: const EdgeInsets.all(20),
+                    height: 90,
+                    width: 90,
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      shape: BoxShape.circle,
+                      borderRadius: BorderRadius.circular(50),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
+                          color: Colors.white.withOpacity(0.1),
                           blurRadius: 20,
                           offset: const Offset(0, 10),
                         ),
                       ],
                     ),
-                    child: const Icon(
-                      Icons.flight,
-                      size: 60,
-                      color: Colors.blue,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(50),
+                      child: Image.asset('assets/logo1.jpg', fit: BoxFit.cover),
                     ),
                   ),
+
                   const SizedBox(height: 32),
 
                   // Title
@@ -267,11 +270,12 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       TextButton(
                         onPressed:
-                            () => Navigator.push(
+                            () => Navigator.pushAndRemoveUntil(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => const RegisterPage(),
+                                builder: (context) => const RegisterPage(),
                               ),
+                              (route) => false,
                             ),
                         style: TextButton.styleFrom(
                           padding: EdgeInsets.zero,
@@ -302,11 +306,12 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       TextButton(
                         onPressed:
-                            () => Navigator.pushReplacement(
+                            () => Navigator.pushAndRemoveUntil(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => const CDashboardPage(),
+                                builder: (context) => const CDashboardPage(),
                               ),
+                              (route) => false,
                             ),
                         style: TextButton.styleFrom(
                           padding: EdgeInsets.zero,

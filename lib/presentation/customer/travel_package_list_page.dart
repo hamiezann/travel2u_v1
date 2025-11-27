@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:travel2u_v1/core/models/travel_package.dart';
 import 'package:travel2u_v1/presentation/customer/package_detail_page.dart';
-import 'package:travel2u_v1/presentation/widgets/ads_placeholder.dart';
+// import 'package:travel2u_v1/presentation/widgets/ads_placeholder.dart';
 import 'package:travel2u_v1/presentation/widgets/carousel_slider.dart';
 import 'package:travel2u_v1/presentation/widgets/popular_packages_section.dart';
 

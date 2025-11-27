@@ -77,7 +77,11 @@ class _BookingPage3State extends State<BookingPage3> {
                 ),
                 label: const Text(
                   'Confirm Booking',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue.shade600,
@@ -106,6 +110,7 @@ class _BookingPage3State extends State<BookingPage3> {
   ) {
     return Card(
       elevation: 3,
+      color: Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
@@ -220,6 +225,16 @@ class _BookingPage3State extends State<BookingPage3> {
             Icons.email_outlined,
             "Email",
             userData['mainUser']['email'] ?? 'Not provided',
+          ),
+          _buildInfoRow(
+            Icons.contact_emergency_outlined,
+            "Identification No",
+            userData['mainUser']['icNo'] ?? 'Not provided',
+          ),
+          _buildInfoRow(
+            Icons.add_card_outlined,
+            "Passport No",
+            userData['mainUser']['passportNo'] ?? 'Not provided',
           ),
           _buildInfoRow(
             Icons.phone_outlined,

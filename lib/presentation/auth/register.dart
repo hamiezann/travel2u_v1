@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:travel2u_v1/core/services/auth_service.dart';
+import 'package:travel2u_v1/presentation/auth/login.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -88,22 +89,22 @@ class _RegisterPageState extends State<RegisterPage> {
                 children: [
                   // Logo/Icon
                   Container(
-                    padding: const EdgeInsets.all(20),
+                    height: 90,
+                    width: 90,
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      shape: BoxShape.circle,
+                      borderRadius: BorderRadius.circular(50),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
+                          color: Colors.white.withOpacity(0.1),
                           blurRadius: 20,
                           offset: const Offset(0, 10),
                         ),
                       ],
                     ),
-                    child: const Icon(
-                      Icons.flight_takeoff,
-                      size: 60,
-                      color: Colors.blue,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(50),
+                      child: Image.asset('assets/logo1.jpg', fit: BoxFit.cover),
                     ),
                   ),
                   const SizedBox(height: 32),
@@ -349,7 +350,17 @@ class _RegisterPageState extends State<RegisterPage> {
                         ),
                       ),
                       TextButton(
-                        onPressed: () => Navigator.pop(context),
+                        // onPressed: () => Navigator.pop(context),
+                        onPressed:
+                            () => {
+                              Navigator.pushAndRemoveUntil(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const LoginPage(),
+                                ),
+                                (route) => false,
+                              ),
+                            },
                         style: TextButton.styleFrom(
                           padding: EdgeInsets.zero,
                           minimumSize: const Size(0, 0),

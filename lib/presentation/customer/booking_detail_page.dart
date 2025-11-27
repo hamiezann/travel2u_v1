@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:travel2u_v1/presentation/customer/booking_review_page.dart';
 import 'package:travel2u_v1/presentation/customer/chat_page.dart';
 
 class BookingDetailPage extends StatefulWidget {
@@ -20,11 +21,17 @@ class BookingDetailPage extends StatefulWidget {
 class _BookingDetailPageState extends State<BookingDetailPage> {
   Map<String, dynamic>? itinerary;
   bool isLoadingItinerary = true;
-
+  bool isComplete = false;
   @override
   void initState() {
     super.initState();
     _fetchItinerary();
+    checkBookingStatus();
+  }
+
+  bool checkBookingStatus() {
+    isComplete = widget.bookingData['status'].toString() == 'completed';
+    return isComplete;
   }
 
   Future<void> _fetchItinerary() async {
@@ -57,8 +64,9 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
   String _formatDate(dynamic v) {
     try {
       if (v is Timestamp) return DateFormat("EEEE, MMM d").format(v.toDate());
-      if (v is String)
+      if (v is String) {
         return DateFormat("EEEE, MMM d").format(DateTime.parse(v));
+      }
       return "-";
     } catch (_) {
       return "-";
@@ -138,9 +146,6 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
     );
   }
 
-  // -------------------------------
-  //         PACKAGE CARD
-  // -------------------------------
   Widget _buildPackageCard(Map p) {
     return _card(
       child: Column(
@@ -174,30 +179,299 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
     );
   }
 
-  // -------------------------------
-  //        BOOKING CARD
-  // -------------------------------
   Widget _buildBookingCard(Map booking) {
+    print(booking['status']);
     return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _sectionTitle("Booking Details", Icons.receipt_long),
           _row("Booking ID", booking['id'] ?? "-"),
+          _row("Booking Status", booking['status'].toString().toUpperCase()),
           _row("Booking Date", _formatDate(booking['createdAt'])),
           _row("Travel Date", _formatDate(booking['travelDate'])),
 
           const SizedBox(height: 12),
-          Text("Travellers", style: _subtitle),
-          const SizedBox(height: 10),
-
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text("Leader", style: _subtitle),
+              isComplete
+                  ? SizedBox()
+                  : IconButton(
+                    icon: Icon(Icons.edit, size: 18, color: Colors.blue),
+                    onPressed: () => _openEditLeaderModal(booking['mainUser']),
+                  ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _travellerTile(booking['mainUser']),
           if (booking['travelers'] != null)
-            Column(
-              children:
-                  booking['travelers']
-                      .map<Widget>((t) => _travellerTile(t))
-                      .toList(),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text("Trip Participants", style: _subtitle),
+                isComplete
+                    ? SizedBox()
+                    : IconButton(
+                      icon: Icon(Icons.edit, size: 18, color: Colors.blue),
+                      onPressed:
+                          () =>
+                              _openEditParticipantsModal(booking['travelers']),
+                    ),
+              ],
             ),
+          const SizedBox(height: 12),
+          Column(
+            children:
+                booking['travelers']
+                    .map<Widget>((t) => _travellerTile(t))
+                    .toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _openEditLeaderModal(Map leader) {
+    final nameCtrl = TextEditingController(text: leader['name']);
+    final icCtrl = TextEditingController(text: leader['icNo']);
+    final passportCtrl = TextEditingController(text: leader['passportNo']);
+    final emailCtrl = TextEditingController(text: leader['email']);
+    final phoneCtrl = TextEditingController(text: leader['phone']);
+    final addressCtrl = TextEditingController(text: leader['address']);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder:
+          (_) => SingleChildScrollView(
+            child: Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+                left: 16,
+                right: 16,
+                top: 20,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text("Edit Leader Details", style: _subtitle),
+                  const SizedBox(height: 16),
+                  _input("Name", nameCtrl),
+                  _input("IC Number", icCtrl),
+                  _input("Passport No", passportCtrl),
+                  _input("Email", emailCtrl),
+                  _input("Phone", phoneCtrl),
+                  _input("Address", addressCtrl),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                    ),
+                    onPressed: () async {
+                      await FirebaseFirestore.instance
+                          .collection("bookings")
+                          .doc(widget.bookingData['id'])
+                          .update({
+                            "mainUser": {
+                              "name": nameCtrl.text,
+                              "icNo": icCtrl.text,
+                              "passportNo": passportCtrl.text,
+                              "email": emailCtrl.text,
+                              "phone": phoneCtrl.text,
+                              "address": addressCtrl.text,
+                            },
+                          });
+
+                      setState(() {
+                        widget.bookingData['mainUser'] = {
+                          "name": nameCtrl.text,
+                          "icNo": icCtrl.text,
+                          "passportNo": passportCtrl.text,
+                          "email": emailCtrl.text,
+                          "phone": phoneCtrl.text,
+                          "address": addressCtrl.text,
+                        };
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Successfully update details'),
+                          backgroundColor: Colors.blue,
+                        ),
+                      );
+                      Navigator.pop(context);
+                    },
+                    child: Text("Save", style: TextStyle(color: Colors.white)),
+                  ),
+                  SizedBox(height: 20),
+                ],
+              ),
+            ),
+          ),
+    );
+  }
+
+  Widget _input(String label, TextEditingController controller) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: TextField(
+        controller: controller,
+        decoration: InputDecoration(
+          labelText: label,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+          contentPadding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        ),
+      ),
+    );
+  }
+
+  void _openEditParticipantsModal(List participants) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder:
+          (_) => StatefulBuilder(
+            builder: (context, setModalState) {
+              return SingleChildScrollView(
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    bottom: MediaQuery.of(context).viewInsets.bottom,
+                    left: 16,
+                    right: 16,
+                    top: 20,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text("Edit Participants", style: _subtitle),
+                      const SizedBox(height: 20),
+
+                      ...participants.asMap().entries.map((entry) {
+                        final i = entry.key;
+                        final p = entry.value;
+
+                        return Column(
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(p['name'], style: _travName),
+                                ),
+                                IconButton(
+                                  icon: Icon(Icons.edit, size: 18),
+                                  onPressed: () {
+                                    _openSingleParticipantModal(
+                                      i,
+                                      participants,
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
+                          ],
+                        );
+                      }),
+
+                      SizedBox(height: 20),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+    );
+  }
+
+  void _openSingleParticipantModal(int index, List participants) {
+    final p = participants[index];
+
+    final nameCtrl = TextEditingController(text: p['name']);
+    final relCtrl = TextEditingController(text: p['relationship']);
+    final icCtrl = TextEditingController(text: p['icNumber']);
+    final passCtrl = TextEditingController(text: p['passportNo']);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder:
+          (_) => Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
+              left: 16,
+              right: 16,
+              top: 20,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text("Edit Participant", style: _subtitle),
+                const SizedBox(height: 16),
+
+                _input("Name", nameCtrl),
+                _input("Relationship", relCtrl),
+                _input("IC Number", icCtrl),
+                _input("Passport Number", passCtrl),
+
+                SizedBox(height: 16),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+                  onPressed: () async {
+                    participants[index] = {
+                      "name": nameCtrl.text,
+                      "relationship": relCtrl.text,
+                      "icNumber": icCtrl.text,
+                      "passportNo": passCtrl.text,
+                    };
+
+                    await FirebaseFirestore.instance
+                        .collection("bookings")
+                        .doc(widget.bookingData['id'])
+                        .update({"travelers": participants});
+
+                    setState(() {
+                      widget.bookingData['travelers'] = participants;
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Successfully update details'),
+                        backgroundColor: Colors.blue,
+                      ),
+                    );
+                    Navigator.pop(context);
+                  },
+                  child: Text("Save", style: TextStyle(color: Colors.white)),
+                ),
+                SizedBox(height: 20),
+              ],
+            ),
+          ),
+    );
+  }
+
+  Widget _rowWrap(String l, String v) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text("$l: ", style: _sub),
+          Expanded(
+            child: Text(
+              v,
+              style: TextStyle(fontWeight: FontWeight.w600),
+              softWrap: true,
+            ),
+          ),
         ],
       ),
     );
@@ -223,19 +497,28 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
           const SizedBox(width: 12),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(t['name'] ?? "-", style: _travName),
-              Text(t['relationship'] ?? "-", style: _sub),
-            ],
+            children:
+                ((t.containsKey('phone')))
+                    ? ([
+                      Text(t['name'] ?? "-", style: _travName),
+                      Text(t['icNo'] ?? "-", style: _sub),
+                      Text(t['passportNo'] ?? "-", style: _sub),
+                      Text(t['email'] ?? "-", style: _sub),
+                      Text(t['phone'] ?? "-", style: _sub),
+                      Text(t['address'] ?? "-", style: _sub),
+                    ])
+                    : ([
+                      Text(t['name'] ?? "-", style: _travName),
+                      Text(t['relationship'] ?? "-", style: _sub),
+                      Text(t['icNumber'] ?? "-", style: _sub),
+                      Text(t['passportNo'] ?? "-", style: _sub),
+                    ]),
           ),
         ],
       ),
     );
   }
 
-  // -------------------------------
-  //      INFO / PREFERENCES CARD
-  // -------------------------------
   Widget _buildInfoCard(Map p, Map booking) {
     return _card(
       child: Column(
@@ -257,15 +540,15 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
 
           if (booking['preferences'] != null)
             _iconInfo(Icons.favorite, "Preferences", [
-              _row(
+              _rowWrap(
                 "Food",
                 booking['preferences']['foodPreference']?.join(", ") ?? "-",
               ),
-              _row(
+              _rowWrap(
                 "Avoid",
                 booking['preferences']['avoidPreference']?.join(", ") ?? "-",
               ),
-              _row(
+              _rowWrap(
                 "Activities",
                 booking['preferences']['preferredActivities']?.join(", ") ??
                     "-",
@@ -508,9 +791,6 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
     );
   }
 
-  // -------------------------------
-  //         BOTTOM BUTTONS
-  // -------------------------------
   Widget _buildBottomButtons() {
     final booking = widget.bookingData;
 
@@ -529,47 +809,55 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
               MaterialPageRoute(
                 builder:
                     (_) => ChatPage(
-                      // bookingId: booking['id'],
                       bookingId: widget.bookingData['id'],
                       userId: booking['userId'],
                       packageId: widget.packageData['id'],
-                      // clientName: booking['mainUser']?['name'] ?? "-",
                     ),
               ),
             );
           }),
-          // const SizedBox(width: 12),
-          // Expanded(
-          //   child: ElevatedButton.icon(
-          //     icon: Icon(Icons.download),
-          //     onPressed: () {
-          //       // TODO: implement itinerary download
-          //     },
-          //     label: Text("Download Itinerary"),
-          //     style: ElevatedButton.styleFrom(
-          //       backgroundColor: Color(0xFF0064D2),
-          //       foregroundColor: Colors.white,
-          //       padding: EdgeInsets.symmetric(vertical: 14),
-          //     ),
-          //   ),
-          // ),
+          const SizedBox(width: 14),
+          isComplete
+              ? _bottomBtn(Icons.reviews_outlined, "Review", () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder:
+                        (_) => ReviewPage(
+                          bookingId: widget.bookingData['id'],
+                          packageId: widget.packageData['id'],
+                          mode: 'add',
+                        ),
+                  ),
+                );
+              })
+              : SizedBox(),
         ],
       ),
     );
   }
 
   Widget _bottomBtn(IconData icon, String label, VoidCallback onTap) {
-    return Container(
-      width: 100,
+    return SizedBox(
       height: 55,
-      decoration: _box,
-      child: InkWell(onTap: onTap, child: Icon(icon, color: Color(0xFF0064D2))),
+      child: ElevatedButton.icon(
+        onPressed: onTap,
+        icon: Icon(icon, size: 22),
+        label: Text(
+          label,
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Color(0xFF0064D2),
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          padding: EdgeInsets.symmetric(horizontal: 24),
+        ),
+      ),
     );
   }
-
-  // ==========================
-  //   STYLE HELPERS
-  // ==========================
 
   final _box = BoxDecoration(
     color: Colors.white,

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
@@ -16,6 +17,9 @@ class _ManageUserPageState extends State<ManageUserPage>
   final Map<String, dynamic> staffList = {};
   final Map<String, dynamic> customerList = {};
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final createUserFn = FirebaseFunctions.instance.httpsCallable(
+    "createUserAccount",
+  );
   bool _isLoading = true;
   static final staffColor = Colors.blue;
   // static final adminColor = staffColor;
@@ -303,20 +307,43 @@ class _ManageUserPageState extends State<ManageUserPage>
 
                   try {
                     if (userId == null) {
-                      UserCredential userCred = await FirebaseAuth.instance
-                          .createUserWithEmailAndPassword(
-                            email: email,
-                            password: defaultPassword,
-                          );
-                      final newUserId = userCred.user!.uid;
+                      // UserCredential userCred = await FirebaseAuth.instance
+                      //     .createUserWithEmailAndPassword(
+                      //       email: email,
+                      //       password: defaultPassword,
+                      //     );
+                      // final newUserId = userCred.user!.uid;
 
-                      final newDoc = _firestore
-                          .collection('users')
-                          .doc(newUserId);
-                      await newDoc.set({
-                        ...data,
-                        'createdAt': FieldValue.serverTimestamp(),
+                      // final newDoc = _firestore
+                      //     .collection('users')
+                      //     .doc(newUserId);
+                      // await newDoc.set({
+                      //   ...data,
+                      //   'createdAt': FieldValue.serverTimestamp(),
+                      // });
+
+                      final result = await createUserFn.call({
+                        'email': email,
+                        'password': defaultPassword,
+                        'role': role,
+                        'userName': name,
+                        'phone': phone,
                       });
+
+                      // Cloud Function returns uid only
+                      // final dataMap = result.data as Map<String, dynamic>;
+                      // final newUserId = dataMap['uid'];
+
+                      // // Save to Firestore
+                      // await _firestore.collection('users').doc(newUserId).set({
+                      //   'userName': name,
+                      //   'email': email,
+                      //   'phone': phone,
+                      //   'role': role,
+                      //   'isActive': true,
+                      //   'createdAt': FieldValue.serverTimestamp(),
+                      //   'updatedAt': FieldValue.serverTimestamp(),
+                      // });
                     } else {
                       await _firestore
                           .collection('users')
@@ -332,7 +359,9 @@ class _ManageUserPageState extends State<ManageUserPage>
                             : 'User updated successfully',
                       );
                     }
-                  } catch (e) {
+                  } catch (e, stack) {
+                    debugPrint("🔥 ERROR: $e");
+                    debugPrint("STACKTRACE: $stack");
                     _showSnackBar('Error saving user: $e', isError: true);
                   }
                 },
