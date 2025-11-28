@@ -18,6 +18,7 @@ dependencies:
   image_picker: ^1.2.0
   intl: ^0.20.2
   carousel_slider: ^5.1.1
+  cloud_functions: ^6.0.4
 
 dev_dependencies:
   flutter_test:
@@ -30,3 +31,4 @@ flutter:
     - assets/banner1.jpg
     - assets/banner2.jpg
     - assets/banner3.jpg
+    - assets/logo1.jpg

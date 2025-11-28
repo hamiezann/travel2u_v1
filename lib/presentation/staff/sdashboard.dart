@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:travel2u_v1/core/services/auth_service.dart';
 import 'package:travel2u_v1/presentation/staff/manage_activity_page.dart';
@@ -7,7 +8,7 @@ import 'package:travel2u_v1/presentation/staff/manage_travel_page.dart';
 import 'package:travel2u_v1/presentation/widgets/custom_message_popup.dart';
 import 'package:travel2u_v1/presentation/widgets/profile_page.dart';
 
-class SDashboardPage extends StatelessWidget {
+class SDashboardPage extends StatefulWidget {
   final String? userId;
   final String? email;
   final String? name;
@@ -21,12 +22,40 @@ class SDashboardPage extends StatelessWidget {
   });
 
   @override
+  State<SDashboardPage> createState() => _SDashboardPageState();
+}
+
+class _SDashboardPageState extends State<SDashboardPage> {
+  Map<String, dynamic> _profile = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchProfile();
+  }
+
+  Future<void> _fetchProfile() async {
+    final doc =
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(widget.userId)
+            .get();
+
+    if (doc.exists) {
+      setState(() {
+        _profile = doc.data()!;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final authService = AuthService();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       MessagePopup.show(
         context,
-        message: "Hi ${name ?? (role == 'staff' ? 'Staff' : 'Admin')}",
+        message:
+            "Hi ${widget.name ?? (widget.role == 'staff' ? 'Staff' : 'Admin')}",
         type: MessageType.success,
         position: PopupPosition.top,
         title: 'Welcome',
@@ -34,12 +63,63 @@ class SDashboardPage extends StatelessWidget {
     });
     return Scaffold(
       appBar: AppBar(
-        title: Text(role == 'staff' ? 'Staff Dashboard' : 'Admin Dashboard'),
+        // title: Text(role == 'staff' ? 'Staff Dashboard' : 'Admin Dashboard'),
+        title:
+            (widget.role == 'staff')
+                ? Row(
+                  children: [
+                    // --- Avatar ---
+                    CircleAvatar(
+                      radius: 22,
+                      backgroundColor: Colors.white,
+                      backgroundImage:
+                          _profile['imageUrl'] != null
+                              ? NetworkImage(_profile['imageUrl'])
+                              : null,
+                      child:
+                          _profile['imageUrl'] == null
+                              ? Text(
+                                (widget.name ?? "U")[0].toUpperCase(),
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.blue,
+                                ),
+                              )
+                              : null,
+                    ),
+
+                    const SizedBox(width: 12),
+
+                    // --- Greeting Text ---
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          "Hello, how are you?",
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          _profile['firstName'] ?? "Staff",
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                )
+                : Text("Admin Dashboard"),
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
-          if (role == "staff") ...[
+          if (widget.role == "staff") ...[
             IconButton(
               icon: const Icon(Icons.person_outline_rounded),
               onPressed: () {
@@ -212,7 +292,7 @@ class SDashboardPage extends StatelessWidget {
                           context: context,
                           icon: Icons.people_alt_outlined,
                           title:
-                              role == 'staff'
+                              widget.role == 'staff'
                                   ? 'Manage Customer'
                                   : 'Manage Staff & Customer',
                           description: 'Manage system user',
@@ -223,8 +303,8 @@ class SDashboardPage extends StatelessWidget {
                               MaterialPageRoute(
                                 builder:
                                     (_) => ManageUserPage(
-                                      userId: userId,
-                                      role: role,
+                                      userId: widget.userId,
+                                      role: widget.role,
                                     ),
                               ),
                             );

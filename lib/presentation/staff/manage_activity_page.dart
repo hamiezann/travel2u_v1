@@ -317,15 +317,94 @@ class _ManageActivityPageState extends State<ManageActivityPage> {
                                         ],
 
                                         // Action Buttons
+                                        // Row(
+                                        //   children: [
+                                        //     Expanded(
+                                        //       child: OutlinedButton.icon(
+                                        //         icon: const Icon(
+                                        //           Icons.chat_bubble_outline,
+                                        //           size: 14,
+                                        //         ),
+                                        //         label: const Text("Chat"),
+                                        //         onPressed: () {
+                                        //           Navigator.push(
+                                        //             context,
+                                        //             MaterialPageRoute(
+                                        //               builder:
+                                        //                   (_) => ChatPage(
+                                        //                     bookingId:
+                                        //                         bookingDoc.id,
+                                        //                     clientName:
+                                        //                         mainUser["name"] ??
+                                        //                         "-",
+                                        //                   ),
+                                        //             ),
+                                        //           );
+                                        //         },
+                                        //         style: OutlinedButton.styleFrom(
+                                        //           foregroundColor: Colors.teal,
+                                        //         ),
+                                        //       ),
+                                        //     ),
+                                        //     const SizedBox(width: 8),
+                                        //     Expanded(
+                                        //       child: OutlinedButton.icon(
+                                        //         icon: const Icon(
+                                        //           Icons.edit_outlined,
+                                        //           size: 14,
+                                        //         ),
+                                        //         label: const Text("Edit"),
+                                        //         onPressed: () {
+                                        //           Navigator.push(
+                                        //             context,
+                                        //             MaterialPageRoute(
+                                        //               builder:
+                                        //                   (
+                                        //                     _,
+                                        //                   ) => EditItineraryPage(
+                                        //                     itineraryId:
+                                        //                         data["itineraryId"],
+                                        //                   ),
+                                        //             ),
+                                        //           );
+                                        //         },
+                                        //         style: OutlinedButton.styleFrom(
+                                        //           foregroundColor: Colors.blue,
+                                        //         ),
+                                        //       ),
+                                        //     ),
+                                        //     const SizedBox(width: 8),
+                                        //     Expanded(
+                                        //       child: ElevatedButton.icon(
+                                        //         // icon: const Icon(
+                                        //         //   Icons.update,
+                                        //         //   size: 12,
+                                        //         // ),
+                                        //         label: const Text(
+                                        //           "Status",
+                                        //           style: TextStyle(
+                                        //             fontSize: 14,
+                                        //           ),
+                                        //         ),
+                                        //         onPressed:
+                                        //             () => _updateStatus(
+                                        //               context,
+                                        //               bookingDoc.id,
+                                        //               data["status"],
+                                        //             ),
+                                        //         style: ElevatedButton.styleFrom(
+                                        //           backgroundColor: Colors.teal,
+                                        //           foregroundColor: Colors.white,
+                                        //         ),
+                                        //       ),
+                                        //     ),
+                                        //   ],
+                                        // ),
                                         Row(
                                           children: [
+                                            // CHAT BUTTON
                                             Expanded(
-                                              child: OutlinedButton.icon(
-                                                icon: const Icon(
-                                                  Icons.chat_bubble_outline,
-                                                  size: 14,
-                                                ),
-                                                label: const Text("Chat"),
+                                              child: ElevatedButton.icon(
                                                 onPressed: () {
                                                   Navigator.push(
                                                     context,
@@ -341,19 +420,42 @@ class _ManageActivityPageState extends State<ManageActivityPage> {
                                                     ),
                                                   );
                                                 },
-                                                style: OutlinedButton.styleFrom(
+                                                icon: const Icon(
+                                                  Icons.chat_bubble_outline,
+                                                  size: 18,
+                                                ),
+                                                label: const Text(
+                                                  "Chat",
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.w600,
+                                                    fontSize: 14,
+                                                  ),
+                                                ),
+                                                style: ElevatedButton.styleFrom(
                                                   foregroundColor: Colors.teal,
+                                                  side: const BorderSide(
+                                                    color: Colors.teal,
+                                                    width: 1.5,
+                                                  ),
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        vertical: 14,
+                                                      ),
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          16,
+                                                        ),
+                                                  ),
                                                 ),
                                               ),
                                             ),
+
                                             const SizedBox(width: 8),
+
+                                            // EDIT BUTTON
                                             Expanded(
-                                              child: OutlinedButton.icon(
-                                                icon: const Icon(
-                                                  Icons.edit_outlined,
-                                                  size: 14,
-                                                ),
-                                                label: const Text("Edit"),
+                                              child: ElevatedButton.icon(
                                                 onPressed: () {
                                                   Navigator.push(
                                                     context,
@@ -368,33 +470,76 @@ class _ManageActivityPageState extends State<ManageActivityPage> {
                                                     ),
                                                   );
                                                 },
-                                                style: OutlinedButton.styleFrom(
-                                                  foregroundColor: Colors.blue,
+                                                icon: const Icon(
+                                                  Icons.edit_outlined,
+                                                  size: 18,
                                                 ),
-                                              ),
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Expanded(
-                                              child: ElevatedButton.icon(
-                                                // icon: const Icon(
-                                                //   Icons.update,
-                                                //   size: 12,
-                                                // ),
                                                 label: const Text(
-                                                  "Status",
+                                                  "Edit",
                                                   style: TextStyle(
+                                                    fontWeight: FontWeight.w600,
                                                     fontSize: 14,
                                                   ),
                                                 ),
+                                                style: ElevatedButton.styleFrom(
+                                                  foregroundColor:
+                                                      Colors.blue.shade700,
+                                                  side: BorderSide(
+                                                    color: Colors.blue.shade700,
+                                                    width: 1.5,
+                                                  ),
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        vertical: 14,
+                                                      ),
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          16,
+                                                        ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+
+                                            const SizedBox(width: 8),
+
+                                            // STATUS BUTTON
+                                            Expanded(
+                                              child: ElevatedButton.icon(
                                                 onPressed:
                                                     () => _updateStatus(
                                                       context,
                                                       bookingDoc.id,
                                                       data["status"],
                                                     ),
+                                                icon: const Icon(
+                                                  Icons.update,
+                                                  size: 18,
+                                                ),
+                                                label: const Text(
+                                                  "Status",
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.w600,
+                                                    fontSize: 14,
+                                                  ),
+                                                ),
                                                 style: ElevatedButton.styleFrom(
-                                                  backgroundColor: Colors.teal,
-                                                  foregroundColor: Colors.white,
+                                                  foregroundColor: Colors.teal,
+                                                  side: const BorderSide(
+                                                    color: Colors.teal,
+                                                    width: 1.5,
+                                                  ),
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        vertical: 14,
+                                                      ),
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          16,
+                                                        ),
+                                                  ),
                                                 ),
                                               ),
                                             ),
