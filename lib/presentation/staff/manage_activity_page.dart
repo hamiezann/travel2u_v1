@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:travel2u_v1/core/services/basic_service.dart';
+import 'package:travel2u_v1/core/services/notification_service.dart';
 import 'package:travel2u_v1/presentation/staff/chat_page.dart';
 import 'package:travel2u_v1/presentation/staff/editItinerary.dart';
 
@@ -175,6 +176,7 @@ class _ManageActivityPageState extends State<ManageActivityPage> {
                                 bookingDoc.data() as Map<String, dynamic>;
 
                             final mainUser = data["mainUser"] ?? {};
+                            final customerId = data["userId"] ?? '';
                             final travelers = List.from(
                               data["travelers"] ?? [],
                             );
@@ -316,141 +318,188 @@ class _ManageActivityPageState extends State<ManageActivityPage> {
                                           const SizedBox(height: 16),
                                         ],
 
-                                        // Action Buttons
-                                        // Row(
-                                        //   children: [
-                                        //     Expanded(
-                                        //       child: OutlinedButton.icon(
-                                        //         icon: const Icon(
-                                        //           Icons.chat_bubble_outline,
-                                        //           size: 14,
-                                        //         ),
-                                        //         label: const Text("Chat"),
-                                        //         onPressed: () {
-                                        //           Navigator.push(
-                                        //             context,
-                                        //             MaterialPageRoute(
-                                        //               builder:
-                                        //                   (_) => ChatPage(
-                                        //                     bookingId:
-                                        //                         bookingDoc.id,
-                                        //                     clientName:
-                                        //                         mainUser["name"] ??
-                                        //                         "-",
-                                        //                   ),
-                                        //             ),
-                                        //           );
-                                        //         },
-                                        //         style: OutlinedButton.styleFrom(
-                                        //           foregroundColor: Colors.teal,
-                                        //         ),
-                                        //       ),
-                                        //     ),
-                                        //     const SizedBox(width: 8),
-                                        //     Expanded(
-                                        //       child: OutlinedButton.icon(
-                                        //         icon: const Icon(
-                                        //           Icons.edit_outlined,
-                                        //           size: 14,
-                                        //         ),
-                                        //         label: const Text("Edit"),
-                                        //         onPressed: () {
-                                        //           Navigator.push(
-                                        //             context,
-                                        //             MaterialPageRoute(
-                                        //               builder:
-                                        //                   (
-                                        //                     _,
-                                        //                   ) => EditItineraryPage(
-                                        //                     itineraryId:
-                                        //                         data["itineraryId"],
-                                        //                   ),
-                                        //             ),
-                                        //           );
-                                        //         },
-                                        //         style: OutlinedButton.styleFrom(
-                                        //           foregroundColor: Colors.blue,
-                                        //         ),
-                                        //       ),
-                                        //     ),
-                                        //     const SizedBox(width: 8),
-                                        //     Expanded(
-                                        //       child: ElevatedButton.icon(
-                                        //         // icon: const Icon(
-                                        //         //   Icons.update,
-                                        //         //   size: 12,
-                                        //         // ),
-                                        //         label: const Text(
-                                        //           "Status",
-                                        //           style: TextStyle(
-                                        //             fontSize: 14,
-                                        //           ),
-                                        //         ),
-                                        //         onPressed:
-                                        //             () => _updateStatus(
-                                        //               context,
-                                        //               bookingDoc.id,
-                                        //               data["status"],
-                                        //             ),
-                                        //         style: ElevatedButton.styleFrom(
-                                        //           backgroundColor: Colors.teal,
-                                        //           foregroundColor: Colors.white,
-                                        //         ),
-                                        //       ),
-                                        //     ),
-                                        //   ],
-                                        // ),
                                         Row(
                                           children: [
                                             // CHAT BUTTON
                                             Expanded(
-                                              child: ElevatedButton.icon(
-                                                onPressed: () {
-                                                  Navigator.push(
-                                                    context,
-                                                    MaterialPageRoute(
-                                                      builder:
-                                                          (_) => ChatPage(
-                                                            bookingId:
-                                                                bookingDoc.id,
-                                                            clientName:
-                                                                mainUser["name"] ??
-                                                                "-",
+                                              child: StreamBuilder<
+                                                QuerySnapshot
+                                              >(
+                                                stream:
+                                                    FirebaseFirestore.instance
+                                                        .collection('chats')
+                                                        .doc(bookingDoc.id)
+                                                        .collection('messages')
+                                                        .where(
+                                                          'isRead',
+                                                          isEqualTo: false,
+                                                        )
+                                                        .where(
+                                                          'sender',
+                                                          isEqualTo: 'customer',
+                                                        )
+                                                        // .where(
+                                                        //   'data',
+                                                        //   isEqualTo: userId,
+                                                        // ) // only unread messages for this staff
+                                                        .snapshots(),
+                                                builder: (context, snapshot) {
+                                                  int unreadCount = 0;
+                                                  if (snapshot.hasData) {
+                                                    unreadCount =
+                                                        snapshot
+                                                            .data!
+                                                            .docs
+                                                            .length;
+                                                  }
+                                                  return ElevatedButton.icon(
+                                                    onPressed: () {
+                                                      Navigator.push(
+                                                        context,
+                                                        MaterialPageRoute(
+                                                          builder:
+                                                              (_) => ChatPage(
+                                                                bookingId:
+                                                                    bookingDoc
+                                                                        .id,
+                                                                clientName:
+                                                                    mainUser["name"] ??
+                                                                    "-",
+                                                                customerId:
+                                                                    customerId,
+                                                                packageId:
+                                                                    data["packageId"],
+                                                              ),
+                                                        ),
+                                                      );
+                                                    },
+                                                    icon: Stack(
+                                                      clipBehavior: Clip.none,
+                                                      children: [
+                                                        const Icon(
+                                                          Icons
+                                                              .chat_bubble_outline,
+                                                          size: 18,
+                                                        ),
+                                                        if (unreadCount > 0)
+                                                          Positioned(
+                                                            top: -6,
+                                                            right: -6,
+                                                            child: Container(
+                                                              padding:
+                                                                  const EdgeInsets.all(
+                                                                    4,
+                                                                  ),
+                                                              decoration: BoxDecoration(
+                                                                color:
+                                                                    Colors.red,
+                                                                shape:
+                                                                    BoxShape
+                                                                        .circle,
+                                                                border: Border.all(
+                                                                  color:
+                                                                      Colors
+                                                                          .white,
+                                                                  width: 1.5,
+                                                                ),
+                                                              ),
+                                                              child: Text(
+                                                                unreadCount
+                                                                    .toString(),
+                                                                style: const TextStyle(
+                                                                  color:
+                                                                      Colors
+                                                                          .white,
+                                                                  fontSize: 10,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .bold,
+                                                                ),
+                                                              ),
+                                                            ),
                                                           ),
+                                                      ],
+                                                    ),
+                                                    label: Text(
+                                                      "Chat",
+                                                      style: TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        fontSize: 14,
+                                                      ),
+                                                    ),
+                                                    style: ElevatedButton.styleFrom(
+                                                      foregroundColor:
+                                                          Colors.teal,
+                                                      side: BorderSide(
+                                                        color: Colors.teal,
+                                                        width: 1.5,
+                                                      ),
+                                                      padding:
+                                                          const EdgeInsets.symmetric(
+                                                            vertical: 14,
+                                                          ),
+                                                      shape: RoundedRectangleBorder(
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              16,
+                                                            ),
+                                                      ),
                                                     ),
                                                   );
                                                 },
-                                                icon: const Icon(
-                                                  Icons.chat_bubble_outline,
-                                                  size: 18,
-                                                ),
-                                                label: const Text(
-                                                  "Chat",
-                                                  style: TextStyle(
-                                                    fontWeight: FontWeight.w600,
-                                                    fontSize: 14,
-                                                  ),
-                                                ),
-                                                style: ElevatedButton.styleFrom(
-                                                  foregroundColor: Colors.teal,
-                                                  side: const BorderSide(
-                                                    color: Colors.teal,
-                                                    width: 1.5,
-                                                  ),
-                                                  padding:
-                                                      const EdgeInsets.symmetric(
-                                                        vertical: 14,
-                                                      ),
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          16,
-                                                        ),
-                                                  ),
-                                                ),
                                               ),
                                             ),
 
+                                            // Expanded(
+                                            //   child: ElevatedButton.icon(
+                                            //     onPressed: () {
+                                            //       Navigator.push(
+                                            //         context,
+                                            //         MaterialPageRoute(
+                                            //           builder:
+                                            //               (_) => ChatPage(
+                                            //                 bookingId:
+                                            //                     bookingDoc.id,
+                                            //                 clientName:
+                                            //                     mainUser["name"] ??
+                                            //                     "-",
+                                            //                 customerId:
+                                            //                     customerId,
+                                            //               ),
+                                            //         ),
+                                            //       );
+                                            //     },
+                                            //     icon: const Icon(
+                                            //       Icons.chat_bubble_outline,
+                                            //       size: 18,
+                                            //     ),
+                                            //     label: const Text(
+                                            //       "Chat",
+                                            //       style: TextStyle(
+                                            //         fontWeight: FontWeight.w600,
+                                            //         fontSize: 14,
+                                            //       ),
+                                            //     ),
+                                            //     style: ElevatedButton.styleFrom(
+                                            //       foregroundColor: Colors.teal,
+                                            //       side: const BorderSide(
+                                            //         color: Colors.teal,
+                                            //         width: 1.5,
+                                            //       ),
+                                            //       padding:
+                                            //           const EdgeInsets.symmetric(
+                                            //             vertical: 14,
+                                            //           ),
+                                            //       shape: RoundedRectangleBorder(
+                                            //         borderRadius:
+                                            //             BorderRadius.circular(
+                                            //               16,
+                                            //             ),
+                                            //       ),
+                                            //     ),
+                                            //   ),
+                                            // ),
                                             const SizedBox(width: 8),
 
                                             // EDIT BUTTON
@@ -466,6 +515,8 @@ class _ManageActivityPageState extends State<ManageActivityPage> {
                                                           ) => EditItineraryPage(
                                                             itineraryId:
                                                                 data["itineraryId"],
+                                                            bookingId:
+                                                                bookingDoc.id,
                                                           ),
                                                     ),
                                                   );
@@ -512,6 +563,8 @@ class _ManageActivityPageState extends State<ManageActivityPage> {
                                                       context,
                                                       bookingDoc.id,
                                                       data["status"],
+                                                      data["packageName"],
+                                                      data["packageId"],
                                                     ),
                                                 icon: const Icon(
                                                   Icons.update,
@@ -656,7 +709,13 @@ class _ManageActivityPageState extends State<ManageActivityPage> {
     }
   }
 
-  void _updateStatus(BuildContext context, String bookingId, String current) {
+  void _updateStatus(
+    BuildContext context,
+    String bookingId,
+    String current,
+    String package_name,
+    String packageId,
+  ) {
     final statuses = ["booked", "pending", "completed", "cancelled"];
     String newStatus = current;
 
@@ -691,18 +750,60 @@ class _ManageActivityPageState extends State<ManageActivityPage> {
               ),
               ElevatedButton(
                 onPressed: () async {
-                  await FirebaseFirestore.instance
-                      .collection('bookings')
-                      .doc(bookingId)
-                      .update({"status": newStatus});
-                  if (context.mounted) {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("Status updated successfully"),
-                        backgroundColor: Colors.green,
-                      ),
-                    );
+                  if (newStatus == current) {
+                    if (context.mounted) Navigator.pop(context);
+                    return;
+                  }
+                  try {
+                    await FirebaseFirestore.instance
+                        .collection('bookings')
+                        .doc(bookingId)
+                        .update({"status": newStatus});
+                    final bookingDoc =
+                        await FirebaseFirestore.instance
+                            .collection('bookings')
+                            .doc(bookingId)
+                            .get();
+
+                    final userId = bookingDoc.data()?['userId'] as String?;
+                    if (userId != null) {
+                      final String title =
+                          "Booking Status: ${newStatus.toUpperCase()}";
+                      final String body =
+                          "Your booking $package_name ($bookingId) has been updated.";
+
+                      await NotificationService().sendNotification(
+                        title: title,
+                        body: body,
+                        userId: userId,
+                        data: {
+                          "bookingId": bookingId,
+                          "packageId": packageId,
+                          "type": "update-status",
+                          "status": newStatus,
+                        },
+                      );
+                    }
+
+                    if (context.mounted) {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("Status updated and user notified!"),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text("Failed to update status: $e"),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
                   }
                 },
                 style: ElevatedButton.styleFrom(

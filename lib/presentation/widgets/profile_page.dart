@@ -333,18 +333,20 @@ class _ProfilePageState extends State<ProfilePage> {
                     },
                   ),
                   const SizedBox(height: 16),
-                  CustomTextField(
-                    controller: _passportNoController,
-                    label: 'Passport No',
-                    icon: Icons.add_card_outlined,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Required';
-                      }
-                      return null;
-                    },
-                    onSaved: (value) => _profile.passportNo = value ?? '',
-                  ),
+                  (userRole == "staff")
+                      ? const SizedBox()
+                      : CustomTextField(
+                        controller: _passportNoController,
+                        label: 'Passport No',
+                        icon: Icons.add_card_outlined,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Required';
+                          }
+                          return null;
+                        },
+                        onSaved: (value) => _profile.passportNo = value ?? '',
+                      ),
                 ],
               ),
 

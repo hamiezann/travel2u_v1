@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+// import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class ManageUserPage extends StatefulWidget {
@@ -168,7 +168,7 @@ class _ManageUserPageState extends State<ManageUserPage>
   void _openUserForm({String? userId, Map<String, dynamic>? userData}) async {
     final formKey = GlobalKey<FormState>();
     final nameController = TextEditingController(
-      text: userData?['userName'] ?? '',
+      text: userData?['firstName'] ?? '',
     );
     final emailController = TextEditingController(
       text: userData?['email'] ?? '',
@@ -297,7 +297,7 @@ class _ManageUserPageState extends State<ManageUserPage>
                   final phone = phoneController.text.trim();
 
                   final data = {
-                    'userName': name,
+                    'firstName': name,
                     'email': email,
                     'phone': phone,
                     'role': role,
@@ -326,7 +326,7 @@ class _ManageUserPageState extends State<ManageUserPage>
                         'email': email,
                         'password': defaultPassword,
                         'role': role,
-                        'userName': name,
+                        'firstName': name,
                         'phone': phone,
                       });
 
@@ -520,7 +520,7 @@ class _ManageUserPageState extends State<ManageUserPage>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      userData['userName'] ?? 'Unknown',
+                      userData['firstName'] ?? 'Unknown',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -647,7 +647,7 @@ class _ManageUserPageState extends State<ManageUserPage>
                     onPressed:
                         () => _deleteUser(
                           userId,
-                          userData['userName'] ?? 'Unknown',
+                          userData['firstName'] ?? 'Unknown',
                         ),
                     tooltip: 'Delete',
                   ),

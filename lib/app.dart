@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:travel2u_v1/core/utils/navigator.dart';
 import 'package:travel2u_v1/core/utils/route.dart';
 import 'package:travel2u_v1/presentation/customer/cdashboard.dart';
 import 'presentation/auth/role_redirect.dart';
 
 class TravelApp extends StatelessWidget {
-  const TravelApp({super.key});
+  TravelApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'IPLANUGO',
       theme: ThemeData(primarySwatch: Colors.teal),
       debugShowCheckedModeBanner: false,

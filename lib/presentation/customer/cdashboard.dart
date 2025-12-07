@@ -4,10 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:travel2u_v1/core/services/auth_service.dart';
 import 'package:travel2u_v1/presentation/auth/change_email_password_page.dart';
 import 'package:travel2u_v1/presentation/customer/booking_list_page.dart';
+import 'package:travel2u_v1/presentation/customer/notification_list_page.dart';
 import 'package:travel2u_v1/presentation/customer/review_listing_page.dart';
 import 'package:travel2u_v1/presentation/customer/travel_package_list_page.dart';
 import 'package:travel2u_v1/presentation/customer/wishlist_page.dart';
 import 'package:travel2u_v1/presentation/widgets/custom_message_popup.dart';
+import 'package:travel2u_v1/presentation/widgets/notification_badge_widget.dart';
 import 'package:travel2u_v1/presentation/widgets/profile_page.dart';
 
 class CDashboardPage extends StatefulWidget {
@@ -37,9 +39,7 @@ class _CDashboardPageState extends State<CDashboardPage> {
   void initState() {
     super.initState();
     final user = FirebaseAuth.instance.currentUser;
-    // if (widget.userId.isNotEmpty) {
     _fetchProfile();
-    // }
     setState(() {
       isLoggedIn = user != null;
     });
@@ -123,53 +123,69 @@ class _CDashboardPageState extends State<CDashboardPage> {
       appBar: AppBar(
         title:
             isLoggedIn
-                ? Row(
-                  children: [
-                    // --- Avatar ---
-                    CircleAvatar(
-                      radius: 22,
-                      backgroundColor: Colors.white,
-                      backgroundImage:
-                          _profile['imageUrl'] != null
-                              ? NetworkImage(_profile['imageUrl'])
-                              : null,
-                      child:
-                          _profile['imageUrl'] == null
-                              ? Text(
-                                (widget.name ?? "U")[0].toUpperCase(),
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.blue,
-                                ),
-                              )
-                              : null,
-                    ),
-
-                    const SizedBox(width: 12),
-
-                    // --- Greeting Text ---
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                ? StreamBuilder<DocumentSnapshot>(
+                  stream:
+                      FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(widget.userId)
+                          .snapshots(),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
+                      return Text("Loading...");
+                    }
+                    final data = snapshot.data!.data() as Map<String, dynamic>;
+                    return Row(
                       children: [
-                        const Text(
-                          "Hello, how are you?",
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        // --- Avatar ---
+                        CircleAvatar(
+                          radius: 22,
+                          backgroundColor: Colors.white,
+                          backgroundImage:
+                              data['imageUrl'] != null
+                                  ? NetworkImage(data['imageUrl'])
+                                  : null,
+                          // _profile['imageUrl'] != null
+                          //     ? NetworkImage(_profile['imageUrl'])
+                          //     : null,
+                          child:
+                              data['imageUrl'] == null
+                                  ? Text(
+                                    (widget.name ?? "U")[0].toUpperCase(),
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.blue,
+                                    ),
+                                  )
+                                  : null,
                         ),
-                        Text(
-                          _profile['firstName'] ?? widget.name ?? "User",
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Colors.white,
-                          ),
+
+                        const SizedBox(width: 12),
+
+                        // --- Greeting Text ---
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              "Hello, how are you?",
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              data['firstName'] ?? widget.name ?? "User",
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
-                    ),
-                  ],
+                    );
+                  },
                 )
                 : const Text(
                   'IPLANUGO',
@@ -208,7 +224,7 @@ class _CDashboardPageState extends State<CDashboardPage> {
               ),
               offset: const Offset(0, 50),
               itemBuilder:
-                  (context) => const [
+                  (context) => [
                     PopupMenuItem<int>(
                       value: 1,
                       child: ListTile(
@@ -252,6 +268,33 @@ class _CDashboardPageState extends State<CDashboardPage> {
                         title: Text('Change Authentication'),
                       ),
                     ),
+                    PopupMenuDivider(),
+                    // PopupMenuItem<int>(
+                    //   value: 5,
+                    //   child: ListTile(
+                    //     // leading: Icon(
+                    //     //   Icons.notifications_outlined,
+                    //     //   color: Colors.blue,
+                    //     // ),
+                    //     title: Text('My Notifications'),
+                    //   ),
+                    // ),
+                    PopupMenuItem<int>(
+                      value: 5,
+                      child: ListTile(
+                        leading: NotificationIcon(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const NotificationListPage(),
+                              ),
+                            );
+                          },
+                        ),
+                        title: const Text('My Notifications'),
+                      ),
+                    ),
                   ],
               onSelected: (value) {
                 if (value == 1) {
@@ -276,6 +319,13 @@ class _CDashboardPageState extends State<CDashboardPage> {
                     context,
                     MaterialPageRoute(
                       builder: (_) => ChangeAuthenticationPage(),
+                    ),
+                  );
+                } else if (value == 5) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const NotificationListPage(),
                     ),
                   );
                 }

@@ -5,6 +5,7 @@ import 'package:travel2u_v1/presentation/staff/manage_activity_page.dart';
 import 'package:travel2u_v1/presentation/staff/manage_system_user_page.dart';
 import 'package:travel2u_v1/presentation/staff/manage_taxonomy_page.dart';
 import 'package:travel2u_v1/presentation/staff/manage_travel_page.dart';
+import 'package:travel2u_v1/presentation/staff/review_page.dart';
 import 'package:travel2u_v1/presentation/widgets/custom_message_popup.dart';
 import 'package:travel2u_v1/presentation/widgets/profile_page.dart';
 
@@ -322,6 +323,22 @@ class _SDashboardPageState extends State<SDashboardPage> {
                               context,
                               MaterialPageRoute(
                                 builder: (_) => const ManageTaxonomyPage(),
+                              ),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        _buildMenuCard(
+                          context: context,
+                          icon: Icons.category,
+                          title: 'Manage Review',
+                          description: 'List of customer reviews',
+                          color: Colors.grey,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const StaffReviewPage(),
                               ),
                             );
                           },

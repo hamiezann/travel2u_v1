@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:travel2u_v1/core/models/travel_package.dart';
 import 'package:travel2u_v1/core/services/itinerary_service.dart';
+import 'package:travel2u_v1/core/services/notification_service.dart';
 import 'package:travel2u_v1/presentation/customer/booking_page_1.dart';
 import 'package:travel2u_v1/presentation/customer/booking_page_2.dart';
 import 'package:travel2u_v1/presentation/customer/booking_page_3.dart';
@@ -30,11 +31,14 @@ class _BookingPageState extends State<BookingPage> {
 
   TravelPackage? _package;
   Map<String, dynamic> _bookingData = {};
-
+  String packageName = '';
+  String creatorId = '';
+  late String userName;
   @override
   void initState() {
     super.initState();
     _fetchPackageDetails(widget.packageId);
+    _fetchUserDetail();
   }
 
   Future<void> _fetchPackageDetails(String packageId) async {
@@ -50,7 +54,29 @@ class _BookingPageState extends State<BookingPage> {
         if (data != null) {
           setState(() {
             _package = TravelPackage.fromJson({...data, 'id': doc.id});
+            creatorId = data['creatorId'];
+            packageName = data['name'];
           });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching package: $e');
+    }
+  }
+
+  Future<void> _fetchUserDetail() async {
+    final userid = FirebaseAuth.instance.currentUser?.uid;
+    try {
+      final doc =
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(userid)
+              .get();
+
+      if (doc.exists && mounted) {
+        final data = doc.data();
+        if (data != null) {
+          userName = data['firstName'] ?? "Client A";
         }
       }
     } catch (e) {
@@ -167,24 +193,16 @@ class _BookingPageState extends State<BookingPage> {
       final bookingCollection = FirebaseFirestore.instance.collection(
         'bookings',
       );
-
-      // 1️⃣ Create a document reference first
       final docRef = bookingCollection.doc();
-
-      // 2️⃣ Insert Firestore ID into your data
       final bookingData = {
         ..._bookingData,
-        'id': docRef.id, // <-- the generated ID
+        'id': docRef.id,
         'userId': FirebaseAuth.instance.currentUser?.uid,
         'packageId': widget.packageId,
         'status': 'booked',
         'createdAt': FieldValue.serverTimestamp(),
       };
-
-      // 3️⃣ Save data
       await docRef.set(bookingData);
-
-      // --- Anything after this is fine ---
       final userId =
           bookingData['userId'] ?? FirebaseAuth.instance.currentUser?.uid;
 
@@ -205,12 +223,16 @@ class _BookingPageState extends State<BookingPage> {
       } else {
         updateData['itineraryError'] = result['message'] ?? 'Unknown error';
       }
-
-      // 4️⃣ Update booking
       await docRef.update(updateData);
 
-      if (!mounted) return;
+      await NotificationService().sendNotification(
+        title: "New Booking!",
+        body: "$userName booked $packageName package.",
+        userId: creatorId,
+        data: {"type": "new-booking"},
+      );
 
+      if (!mounted) return;
       setState(() {
         _isSavingLoading = false;
         _isSubmitting = true;

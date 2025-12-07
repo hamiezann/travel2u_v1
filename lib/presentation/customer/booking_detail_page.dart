@@ -22,11 +22,13 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
   Map<String, dynamic>? itinerary;
   bool isLoadingItinerary = true;
   bool isComplete = false;
+  late String supportId;
   @override
   void initState() {
     super.initState();
     _fetchItinerary();
     checkBookingStatus();
+    getStaffId();
   }
 
   bool checkBookingStatus() {
@@ -58,6 +60,21 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
       }
     } catch (e) {
       setState(() => isLoadingItinerary = false);
+    }
+  }
+
+  Future<void> getStaffId() async {
+    final packageId = widget.bookingData["packageId"];
+    final snapshot =
+        await FirebaseFirestore.instance
+            .collection('travel_packages')
+            .doc(packageId)
+            .get();
+    final doc = snapshot.data();
+    if (doc != null) {
+      supportId = doc['creatorId'] as String;
+    } else {
+      print("Error: Travel package document not found for ID: $packageId");
     }
   }
 
@@ -793,6 +810,7 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
 
   Widget _buildBottomButtons() {
     final booking = widget.bookingData;
+    final bookingId = booking['id'];
 
     return Container(
       padding: EdgeInsets.fromLTRB(16, 12, 16, 16),
@@ -803,20 +821,69 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          _bottomBtn(Icons.chat, "Chat", () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder:
-                    (_) => ChatPage(
-                      bookingId: widget.bookingData['id'],
-                      userId: booking['userId'],
-                      packageId: widget.packageData['id'],
+          StreamBuilder<QuerySnapshot>(
+            stream:
+                FirebaseFirestore.instance
+                    .collection('chats')
+                    .doc(bookingId)
+                    .collection('messages')
+                    // .where('sender', isEqualTo: 'staff')
+                    .where('sender', isNotEqualTo: 'customer')
+                    .where('isRead', isEqualTo: false)
+                    .snapshots(),
+            builder: (context, snapshot) {
+              int unreadCount = 0;
+              if (snapshot.hasData) {
+                unreadCount = snapshot.data!.docs.length;
+              }
+
+              return Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  _bottomBtn(Icons.chat, "Chat", () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder:
+                            (_) => ChatPage(
+                              bookingId: bookingId,
+                              userId: booking['userId'],
+                              packageId: widget.packageData['id'],
+                              supportId: supportId,
+                            ),
+                      ),
+                    );
+                  }),
+
+                  if (unreadCount > 0)
+                    Positioned(
+                      right: -6,
+                      top: -6,
+                      child: Container(
+                        padding: EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 1.5),
+                        ),
+                        child: Text(
+                          unreadCount.toString(),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
                     ),
-              ),
-            );
-          }),
+                ],
+              );
+            },
+          ),
+
           const SizedBox(width: 14),
+
+          // REVIEW BUTTON (IF COMPLETE)
           isComplete
               ? _bottomBtn(Icons.reviews_outlined, "Review", () {
                 Navigator.push(
@@ -824,7 +891,7 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
                   MaterialPageRoute(
                     builder:
                         (_) => ReviewPage(
-                          bookingId: widget.bookingData['id'],
+                          bookingId: booking['id'],
                           packageId: widget.packageData['id'],
                           mode: 'add',
                         ),

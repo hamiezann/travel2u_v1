@@ -3,11 +3,17 @@ import 'package:flutter/material.dart';
 import 'package:multi_select_flutter/chip_display/multi_select_chip_display.dart';
 import 'package:multi_select_flutter/dialog/multi_select_dialog_field.dart';
 import 'package:multi_select_flutter/util/multi_select_item.dart';
+import 'package:travel2u_v1/core/services/notification_service.dart';
 
 class EditItineraryPage extends StatefulWidget {
   final String itineraryId;
+  final String bookingId;
 
-  const EditItineraryPage({super.key, required this.itineraryId});
+  const EditItineraryPage({
+    super.key,
+    required this.itineraryId,
+    required this.bookingId,
+  });
 
   @override
   State<EditItineraryPage> createState() => _EditItineraryPageState();
@@ -100,7 +106,10 @@ class _EditItineraryPageState extends State<EditItineraryPage> {
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: const Text("Edit Itinerary"),
+        title: const Text(
+          "Edit Itinerary",
+          style: TextStyle(color: Colors.white),
+        ),
         backgroundColor: Colors.teal,
         elevation: 0,
         actions: [
@@ -660,9 +669,32 @@ class _EditItineraryPageState extends State<EditItineraryPage> {
 
   // -------------------------
   // SAVE CHANGES TO FIRESTORE
-  // -------------------------
+  // -------------------------,
   Future<void> _saveChanges() async {
     try {
+      // 1. Get latest version from Firestore (ensures correctness)
+      final doc =
+          await FirebaseFirestore.instance
+              .collection("itineraries")
+              .doc(widget.itineraryId)
+              .get();
+
+      final oldData = doc.data() ?? {};
+
+      // 2. Prepare update message
+      List<String> updates = [];
+
+      if (selectedStatus != oldData['status']) {
+        updates.add("Itinerary status was updated to $selectedStatus");
+      }
+
+      if (days != oldData['days']) {
+        updates.add("Itinerary activity was updated");
+      }
+
+      String message = updates.join("\n");
+
+      // 3. Update Firestore
       await FirebaseFirestore.instance
           .collection("itineraries")
           .doc(widget.itineraryId)
@@ -673,6 +705,20 @@ class _EditItineraryPageState extends State<EditItineraryPage> {
             "lastEditedBy": "staff",
             "editedAt": FieldValue.serverTimestamp(),
           });
+
+      // 4. Send notification only if there is an update
+      if (message.isNotEmpty) {
+        await NotificationService().sendNotification(
+          title: "Itinerary Updates",
+          body: message,
+          userId: oldData['userId'],
+          data: {
+            "packageId": oldData['packageId'],
+            "bookingId": widget.bookingId,
+            "type": "itinerary-update",
+          },
+        );
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -693,6 +739,56 @@ class _EditItineraryPageState extends State<EditItineraryPage> {
       }
     }
   }
+
+  // Future<void> _saveChanges() async {
+  //   try {
+  //     await FirebaseFirestore.instance
+  //         .collection("itineraries")
+  //         .doc(widget.itineraryId)
+  //         .update({
+  //           "days": days,
+  //           "generationNotes": generationNotesController.text,
+  //           "status": selectedStatus,
+  //           "lastEditedBy": "staff",
+  //           "editedAt": FieldValue.serverTimestamp(),
+  //         });
+  //     List<String> updates = [];
+
+  //     if (selectedStatus != itinerary['status']) {
+  //       updates.add("Itinerary status was updated to $selectedStatus");
+  //     }
+
+  //     if (days != itinerary['days']) {
+  //       updates.add("Itinerary activity was updated");
+  //     }
+
+  //     String message = updates.join("\n");
+  //     await NotificationService().sendNotification(
+  //       title: "Itinerary Updates:",
+  //       body: message,
+  //       userId: itinerary['userId'],
+  //       data: {"packageId": itinerary['packageId'], "type": "info"},
+  //     );
+
+  //     if (mounted) {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         const SnackBar(
+  //           content: Text("Itinerary saved successfully"),
+  //           backgroundColor: Colors.green,
+  //         ),
+  //       );
+  //     }
+  //   } catch (e) {
+  //     if (mounted) {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(
+  //           content: Text("Error saving: $e"),
+  //           backgroundColor: Colors.red,
+  //         ),
+  //       );
+  //     }
+  //   }
+  // }
 
   InputDecoration _inputDecoration(String hint) => InputDecoration(
     hintText: hint,

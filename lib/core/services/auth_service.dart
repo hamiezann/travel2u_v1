@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -38,7 +39,12 @@ class AuthService {
           }
           return;
         });
+    String? token = await FirebaseMessaging.instance.getToken();
 
+    await FirebaseFirestore.instance
+        .collection("users")
+        .doc(cred.user?.uid)
+        .update({"fcmToken": token});
     return cred.user;
   }
 
