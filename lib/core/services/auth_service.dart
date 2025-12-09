@@ -39,6 +39,7 @@ class AuthService {
           }
           return;
         });
+    await FirebaseMessaging.instance.deleteToken();
     String? token = await FirebaseMessaging.instance.getToken();
 
     await FirebaseFirestore.instance
@@ -48,7 +49,18 @@ class AuthService {
     return cred.user;
   }
 
+  // Future<void> logout() async {
+  //   await _auth.signOut();
+  // }
+
   Future<void> logout() async {
+    // final user = _auth.currentUser;
+    // if (user != null) {
+    //   await FirebaseFirestore.instance.collection("users").doc(user.uid).update(
+    //     {"fcmToken": FieldValue.delete()},
+    //   );
+    // }
+    await FirebaseMessaging.instance.deleteToken();
     await _auth.signOut();
   }
 }

@@ -270,12 +270,12 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       TextButton(
                         onPressed:
-                            () => Navigator.pushAndRemoveUntil(
+                            () => Navigator.push(
                               context,
                               MaterialPageRoute(
                                 builder: (context) => const RegisterPage(),
                               ),
-                              (route) => false,
+                              // (route) => false,
                             ),
                         style: TextButton.styleFrom(
                           padding: EdgeInsets.zero,

@@ -112,7 +112,8 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
                   const SizedBox(height: 16),
                   _buildInfoCard(package, booking),
                   const SizedBox(height: 16),
-                  _buildItineraryCard(),
+                  // _buildItineraryCard(),
+                  _buildItinerary(),
                   const SizedBox(height: 50),
                 ],
               ),
@@ -576,7 +577,7 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
     );
   }
 
-  Widget _buildItineraryCard() {
+  Widget _buildItinerary() {
     if (isLoadingItinerary) {
       return _card(
         child: Center(
@@ -608,141 +609,298 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
       );
     }
 
-    final days = itinerary!['days'] ?? [];
+    final days = itinerary!["days"] as List;
+    // final days = itinerary!['days'] ?? [];
     // final status = widget.bookingData['itineraryStatus'] ?? "pending";
     final status = itinerary!['status'] ?? "pending";
-
     return _card(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _sectionTitle("Itinerary", Icons.map_outlined),
-
-          // Status with color-coded badge
-          Row(
-            children: [
-              Text(
-                "Status: ",
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                  color: Colors.grey[700],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: _getStatusColor(status),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  status.toUpperCase(),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          // Notes section
-          if (itinerary!['generationNotes'] != null &&
-              itinerary!['generationNotes'].toString().trim().isNotEmpty) ...[
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.blue.shade50,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.blue.shade100),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(
-                    Icons.info_outline,
-                    size: 18,
-                    color: Colors.blue.shade700,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "Notes",
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                            color: Colors.blue.shade900,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          itinerary!['generationNotes'],
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.blue.shade900,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-
-          const SizedBox(height: 20),
-
-          // Days section
-          if (days.isNotEmpty) ...[
+      // margin: const EdgeInsets.symmetric(vertical: 10),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _sectionTitle("Itinerary", Icons.map_outlined),
+            // Status with color-coded badge
             Row(
               children: [
-                Icon(Icons.calendar_today, size: 16, color: Colors.grey[600]),
-                const SizedBox(width: 6),
                 Text(
-                  "${days.length} ${days.length == 1 ? 'Day' : 'Days'}",
+                  "Status: ",
                   style: TextStyle(
-                    fontSize: 14,
                     fontWeight: FontWeight.w600,
+                    fontSize: 14,
                     color: Colors.grey[700],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _getStatusColor(status),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    status.toUpperCase(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-          ],
 
-          ...days.asMap().entries.map((entry) {
-            final index = entry.key;
-            final day = entry.value;
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _buildDayCard(index + 1, day),
-            );
-          }).toList(),
-
-          if (days.isEmpty)
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                child: Text(
-                  "No days scheduled",
-                  style: TextStyle(color: Colors.grey[500], fontSize: 14),
+            if (itinerary!['generationNotes'] != null &&
+                itinerary!['generationNotes'].toString().trim().isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue.shade100),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      size: 18,
+                      color: Colors.blue.shade700,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Notes",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              color: Colors.blue.shade900,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            itinerary!['generationNotes'],
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.blue.shade900,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
+            ],
+
+            const SizedBox(height: 20),
+
+            Column(
+              children:
+                  days.map((dayData) {
+                    final dayNumber = dayData["day"];
+                    final activities = dayData["activities"] as List;
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Day $dayNumber",
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+
+                        _buildVerticalTimeline(activities),
+
+                        const SizedBox(height: 20),
+                      ],
+                    );
+                  }).toList(),
             ),
-        ],
+          ],
+        ),
       ),
     );
   }
+
+  // Widget _buildItineraryCard() {
+  //   if (isLoadingItinerary) {
+  //     return _card(
+  //       child: Center(
+  //         child: Padding(
+  //           padding: const EdgeInsets.all(24.0),
+  //           child: CircularProgressIndicator(color: Colors.teal),
+  //         ),
+  //       ),
+  //     );
+  //   }
+
+  //   if (itinerary == null) {
+  //     return _card(
+  //       child: Padding(
+  //         padding: const EdgeInsets.all(24.0),
+  //         child: Center(
+  //           child: Column(
+  //             children: [
+  //               Icon(Icons.map_outlined, size: 48, color: Colors.grey[400]),
+  //               const SizedBox(height: 12),
+  //               Text(
+  //                 "No itinerary generated yet",
+  //                 style: TextStyle(color: Colors.grey[600], fontSize: 14),
+  //               ),
+  //             ],
+  //           ),
+  //         ),
+  //       ),
+  //     );
+  //   }
+
+  //   final days = itinerary!['days'] ?? [];
+  //   // final status = widget.bookingData['itineraryStatus'] ?? "pending";
+  //   final status = itinerary!['status'] ?? "pending";
+
+  //   return _card(
+  //     child: Column(
+  //       crossAxisAlignment: CrossAxisAlignment.start,
+  //       children: [
+  //         _sectionTitle("Itinerary", Icons.map_outlined),
+
+  //         // Status with color-coded badge
+  //         Row(
+  //           children: [
+  //             Text(
+  //               "Status: ",
+  //               style: TextStyle(
+  //                 fontWeight: FontWeight.w600,
+  //                 fontSize: 14,
+  //                 color: Colors.grey[700],
+  //               ),
+  //             ),
+  //             Container(
+  //               padding: const EdgeInsets.symmetric(
+  //                 horizontal: 12,
+  //                 vertical: 6,
+  //               ),
+  //               decoration: BoxDecoration(
+  //                 color: _getStatusColor(status),
+  //                 borderRadius: BorderRadius.circular(20),
+  //               ),
+  //               child: Text(
+  //                 status.toUpperCase(),
+  //                 style: const TextStyle(
+  //                   color: Colors.white,
+  //                   fontSize: 12,
+  //                   fontWeight: FontWeight.bold,
+  //                   letterSpacing: 0.5,
+  //                 ),
+  //               ),
+  //             ),
+  //           ],
+  //         ),
+
+  //         // Notes section
+  //         if (itinerary!['generationNotes'] != null &&
+  //             itinerary!['generationNotes'].toString().trim().isNotEmpty) ...[
+  //           const SizedBox(height: 16),
+  //           Container(
+  //             padding: const EdgeInsets.all(12),
+  //             decoration: BoxDecoration(
+  //               color: Colors.blue.shade50,
+  //               borderRadius: BorderRadius.circular(8),
+  //               border: Border.all(color: Colors.blue.shade100),
+  //             ),
+  //             child: Row(
+  //               crossAxisAlignment: CrossAxisAlignment.start,
+  //               children: [
+  //                 Icon(
+  //                   Icons.info_outline,
+  //                   size: 18,
+  //                   color: Colors.blue.shade700,
+  //                 ),
+  //                 const SizedBox(width: 8),
+  //                 Expanded(
+  //                   child: Column(
+  //                     crossAxisAlignment: CrossAxisAlignment.start,
+  //                     children: [
+  //                       Text(
+  //                         "Notes",
+  //                         style: TextStyle(
+  //                           fontWeight: FontWeight.bold,
+  //                           fontSize: 13,
+  //                           color: Colors.blue.shade900,
+  //                         ),
+  //                       ),
+  //                       const SizedBox(height: 4),
+  //                       Text(
+  //                         itinerary!['generationNotes'],
+  //                         style: TextStyle(
+  //                           fontSize: 13,
+  //                           color: Colors.blue.shade900,
+  //                         ),
+  //                       ),
+  //                     ],
+  //                   ),
+  //                 ),
+  //               ],
+  //             ),
+  //           ),
+  //         ],
+
+  //         const SizedBox(height: 20),
+
+  //         // Days section
+  //         if (days.isNotEmpty) ...[
+  //           Row(
+  //             children: [
+  //               Icon(Icons.calendar_today, size: 16, color: Colors.grey[600]),
+  //               const SizedBox(width: 6),
+  //               Text(
+  //                 "${days.length} ${days.length == 1 ? 'Day' : 'Days'}",
+  //                 style: TextStyle(
+  //                   fontSize: 14,
+  //                   fontWeight: FontWeight.w600,
+  //                   color: Colors.grey[700],
+  //                 ),
+  //               ),
+  //             ],
+  //           ),
+  //           const SizedBox(height: 12),
+  //         ],
+
+  //         ...days.asMap().entries.map((entry) {
+  //           final index = entry.key;
+  //           final day = entry.value;
+  //           return Padding(
+  //             padding: const EdgeInsets.only(bottom: 12),
+  //             child: _buildDayCard(index + 1, day),
+  //           );
+  //         }).toList(),
+
+  //         if (days.isEmpty)
+  //           Center(
+  //             child: Padding(
+  //               padding: const EdgeInsets.symmetric(vertical: 16),
+  //               child: Text(
+  //                 "No days scheduled",
+  //                 style: TextStyle(color: Colors.grey[500], fontSize: 14),
+  //               ),
+  //             ),
+  //           ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   // Helper method to get status color
   Color _getStatusColor(String status) {
@@ -997,6 +1155,147 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
           Text(t, style: _subtitle),
         ],
       ),
+    );
+  }
+
+  List<String> _parseDurations(String durationString) {
+    return durationString.split(',').map((e) => e.trim()).toList();
+  }
+
+  Widget _buildVerticalTimeline(List activities) {
+    return Column(
+      children:
+          activities.asMap().entries.map((activityEntry) {
+            final activityIndex = activityEntry.key;
+            final activity = activityEntry.value;
+
+            final times = _parseDurations(activity["duration"] ?? "");
+            final isLastActivity = activityIndex == activities.length - 1;
+
+            return Column(
+              children:
+                  times.asMap().entries.map((timeEntry) {
+                    final timeIndex = timeEntry.key;
+                    final time = timeEntry.value;
+
+                    final isLastBlock =
+                        isLastActivity && timeIndex == times.length - 1;
+
+                    return IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // LEFT: Time
+                          SizedBox(
+                            width: 70,
+                            child: Align(
+                              alignment: Alignment.topLeft,
+                              child: Text(
+                                time,
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.grey.shade700,
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          // MIDDLE: Dot + Auto Line
+                          Column(
+                            children: [
+                              // Dot
+                              Container(
+                                width: 12,
+                                height: 12,
+                                decoration: BoxDecoration(
+                                  color: Colors.blue,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+
+                              // Line
+                              if (!isLastBlock)
+                                Expanded(
+                                  child: Container(
+                                    width: 2.5,
+                                    margin: const EdgeInsets.only(top: 4),
+                                    color: Colors.blue.shade400,
+                                  ),
+                                ),
+                            ],
+                          ),
+
+                          const SizedBox(width: 14),
+
+                          // RIGHT: Activity Card
+                          Expanded(
+                            child: Container(
+                              margin: const EdgeInsets.only(bottom: 24),
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.blue.shade100),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.05),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 3),
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    activity["name"] ?? "-",
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.grey.shade900,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  _buildInfoRow(
+                                    Icons.location_on_outlined,
+                                    activity['location'] ?? '-',
+                                  ),
+                                  const SizedBox(height: 6),
+                                  _buildInfoRow(
+                                    Icons.category_outlined,
+                                    activity['type'] ?? '-',
+                                  ),
+                                  const SizedBox(height: 6),
+                                  _buildInfoRow(
+                                    Icons.restaurant_outlined,
+                                    activity['foodType']?.toString() ?? '-',
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+            );
+          }).toList(),
+    );
+  }
+
+  Widget _buildInfoRow(IconData icon, String text) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: Colors.grey.shade600),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+          ),
+        ),
+      ],
     );
   }
 

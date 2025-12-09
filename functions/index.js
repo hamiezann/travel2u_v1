@@ -15,7 +15,7 @@ exports.createUserAccount = onCall(async (request) => {
     const userRecord = await admin.auth().createUser({
       email: data.email,
       password: data.password,
-      displayName: data.userName,
+      displayName: data.firstName,
     });
 
     await admin
@@ -23,7 +23,7 @@ exports.createUserAccount = onCall(async (request) => {
       .collection("users")
       .doc(userRecord.uid)
       .set({
-        firstName: data.userName,
+        firstName: data.firstName,
         email: data.email,
         phone: data.phone,
         role: data.role ?? "customer",
@@ -37,65 +37,6 @@ exports.createUserAccount = onCall(async (request) => {
     throw new HttpsError("unknown", err.message);
   }
 });
-
-// exports.pushNotifications = onDocumentCreated(
-//   {
-//     region: "asia-southeast1",
-//     document: "push_queue/{id}",
-//   },
-//   async (event) => {
-//     const snap = event.data;
-
-//     if (!snap) {
-//       logger.warn("Snapshot missing.");
-//       return;
-//     }
-
-//     const data = snap.data();
-
-//     if (!data) {
-//       logger.warn("Empty document:", snap.id);
-//       return snap.ref.delete();
-//     }
-
-//     // Extract fields
-//     const userId = data.userId;
-//     let token = data.token;
-
-//     // If userId given, fetch fcmToken
-//     if (userId) {
-//       const userSnap = await admin
-//         .firestore()
-//         .collection("users")
-//         .doc(userId)
-//         .get();
-
-//       token = userSnap.data()?.fcmToken;
-//     }
-
-//     if (!token) {
-//       logger.warn("No FCM token for this task");
-//       return snap.ref.delete();
-//     }
-
-//     try {
-//       await admin.messaging().send({
-//         token,
-//         notification: {
-//           title: data.title,
-//           body: data.body,
-//         },
-//         data: data.data ?? {},
-//       });
-
-//       logger.info("Notification sent");
-//     } catch (err) {
-//       logger.error("FCM send error", err);
-//     }
-
-//     return snap.ref.delete();
-//   }
-// );
 
 exports.pushNotifications = onDocumentCreated(
   {

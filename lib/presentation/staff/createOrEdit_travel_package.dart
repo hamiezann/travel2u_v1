@@ -558,6 +558,9 @@ class _CreateOrEditTravelPackagePageState
     _travelPackage.hotelRating = _hotelRatingController.text;
     _travelPackage.flightDetail = _flightDetailController.text;
     _travelPackage.flightClass = _flightClassController.text;
+    if (_selectedDateRange != null) {
+      _travelPackage.travelDate = _selectedDateRange!.start;
+    }
   }
 
   // Future<void> _handleBackPress() async {
@@ -1630,12 +1633,16 @@ class _CreateOrEditTravelPackagePageState
             if (_currentDay < totalDays && isDayFull(_currentDay))
               ElevatedButton.icon(
                 icon: const Icon(Icons.arrow_forward),
-                label: Text('Next Day (${_currentDay + 1})'),
+                label: Text(
+                  'Next Day (${_currentDay + 1})',
+                  style: TextStyle(color: Colors.blue),
+                ),
                 onPressed: () {
                   setState(() {
                     _currentDay++;
                   });
                 },
+                // style: ButtonStyle(backgroundColor: Colors.white),
               ),
           ],
         ),

@@ -23,21 +23,23 @@ class NotificationIcon extends StatelessWidget {
         if (snapshot.hasData) unreadCount = snapshot.data!.docs.length;
 
         return Stack(
-          alignment: Alignment.centerRight,
+          clipBehavior: Clip.none,
           children: [
-            IconButton(
-              icon: const Icon(
+            GestureDetector(
+              onTap: onTap,
+              child: const Icon(
                 Icons.notifications_outlined,
                 color: Colors.blue,
+                size: 24, // match your other leading icons
               ),
-              onPressed: onTap,
             ),
+
             if (unreadCount > 0)
               Positioned(
-                right: 6,
-                top: 6,
+                top: -2,
+                right: -2,
                 child: Container(
-                  padding: const EdgeInsets.all(4),
+                  padding: const EdgeInsets.all(3),
                   decoration: const BoxDecoration(
                     color: Colors.red,
                     shape: BoxShape.circle,

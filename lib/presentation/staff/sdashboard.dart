@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:travel2u_v1/core/services/auth_service.dart';
 import 'package:travel2u_v1/presentation/staff/manage_activity_page.dart';
@@ -32,14 +33,17 @@ class _SDashboardPageState extends State<SDashboardPage> {
   @override
   void initState() {
     super.initState();
+    final user = FirebaseAuth.instance.currentUser;
     _fetchProfile();
   }
 
   Future<void> _fetchProfile() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
     final doc =
         await FirebaseFirestore.instance
             .collection('users')
-            .doc(widget.userId)
+            .doc(user.uid)
             .get();
 
     if (doc.exists) {
@@ -52,6 +56,7 @@ class _SDashboardPageState extends State<SDashboardPage> {
   @override
   Widget build(BuildContext context) {
     final authService = AuthService();
+    final navigator = Navigator.of(context);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       MessagePopup.show(
         context,
@@ -143,7 +148,8 @@ class _SDashboardPageState extends State<SDashboardPage> {
                       content: const Text('Are you sure you want to logout?'),
                       actions: [
                         TextButton(
-                          onPressed: () => Navigator.of(context).pop(),
+                          onPressed: () => navigator.pop(),
+                          // Navigator.of(context).pop(),
                           child: const Text(
                             'Cancel',
                             style: TextStyle(color: Colors.blue),
@@ -151,15 +157,24 @@ class _SDashboardPageState extends State<SDashboardPage> {
                         ),
                         TextButton(
                           onPressed: () async {
-                            Navigator.of(context).pop();
+                            // Navigator.of(context).pop();
+                            // await authService.logout();
+                            // if (context.mounted) {
+                            //   Navigator.pushNamedAndRemoveUntil(
+                            //     context,
+                            //     '/login',
+                            //     (route) => false,
+                            //   );
+                            // }
+                            navigator.pop(); // close dialog
                             await authService.logout();
-                            if (context.mounted) {
-                              Navigator.pushNamedAndRemoveUntil(
-                                context,
-                                '/login',
-                                (route) => false,
-                              );
-                            }
+
+                            if (!mounted) return; // safer
+
+                            navigator.pushNamedAndRemoveUntil(
+                              '/login',
+                              (route) => false,
+                            );
                           },
                           child: const Text(
                             'Logout',

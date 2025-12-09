@@ -119,12 +119,20 @@ class _MyTripsPageState extends State<MyTripsPage> {
     bool completed,
   ) {
     final travelDate = DateTime.tryParse(trip['travelDate'] ?? "");
+    // debugPrint("traveldate: $travelDate");
     final now = DateTime.now();
-    int daysLeft = travelDate != null ? travelDate.difference(now).inDays : 0;
+    // debugPrint("now: $now");
+    // int daysLeft =
+    //     travelDate != null ? travelDate.difference(now).inDays.abs() : 0;
+    int daysLeft =
+        travelDate != null
+            ? (travelDate.difference(now).inHours / 24).ceil()
+            : 0;
 
+    // int daysLeft = travelDate != null ? travelDate.difference(now).inDays : 0;
     final packageId = trip["packageId"] ?? "";
     final status = trip["itineraryStatus"] ?? "";
-
+    // debugPrint("daysleft: $daysLeft");
     return FutureBuilder(
       future: _fetchPackageDetails(packageId),
       builder: (context, snapshot) {

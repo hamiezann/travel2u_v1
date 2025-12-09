@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -34,6 +36,7 @@ class _CDashboardPageState extends State<CDashboardPage> {
   int _selectedIndex = 0;
   bool isLoggedIn = false;
   Map<String, dynamic> _profile = {};
+  late final StreamSubscription<User?> _authListener;
 
   @override
   void initState() {
@@ -55,6 +58,18 @@ class _CDashboardPageState extends State<CDashboardPage> {
         );
       });
     }
+    _authListener = FirebaseAuth.instance.authStateChanges().listen((user) {
+      if (!mounted) return; // <-- IMPORTANT CHECK
+      setState(() {
+        isLoggedIn = user != null;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _authListener.cancel(); // <-- CANCEL LISTENER
+    super.dispose();
   }
 
   Widget _getPage(int index) {
@@ -104,10 +119,12 @@ class _CDashboardPageState extends State<CDashboardPage> {
   }
 
   Future<void> _fetchProfile() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
     final doc =
         await FirebaseFirestore.instance
             .collection('users')
-            .doc(widget.userId)
+            .doc(user.uid)
             .get();
 
     if (doc.exists) {
@@ -123,67 +140,86 @@ class _CDashboardPageState extends State<CDashboardPage> {
       appBar: AppBar(
         title:
             isLoggedIn
-                ? StreamBuilder<DocumentSnapshot>(
-                  stream:
-                      FirebaseFirestore.instance
-                          .collection('users')
-                          .doc(widget.userId)
-                          .snapshots(),
-                  builder: (context, snapshot) {
-                    if (!snapshot.hasData) {
-                      return Text("Loading...");
-                    }
-                    final data = snapshot.data!.data() as Map<String, dynamic>;
-                    return Row(
-                      children: [
-                        // --- Avatar ---
-                        CircleAvatar(
-                          radius: 22,
-                          backgroundColor: Colors.white,
-                          backgroundImage:
-                              data['imageUrl'] != null
-                                  ? NetworkImage(data['imageUrl'])
-                                  : null,
-                          // _profile['imageUrl'] != null
-                          //     ? NetworkImage(_profile['imageUrl'])
-                          //     : null,
-                          child:
-                              data['imageUrl'] == null
-                                  ? Text(
-                                    (widget.name ?? "U")[0].toUpperCase(),
-                                    style: const TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.blue,
-                                    ),
-                                  )
-                                  : null,
+                ? Builder(
+                  builder: (context) {
+                    final user = FirebaseAuth.instance.currentUser;
+
+                    // If user = null (logged out), show fallback
+                    if (user == null) {
+                      return const Text(
+                        "IPLANUGO",
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.5,
                         ),
+                      );
+                    }
 
-                        const SizedBox(width: 12),
+                    return StreamBuilder<DocumentSnapshot>(
+                      stream:
+                          FirebaseFirestore.instance
+                              .collection('users')
+                              .doc(user.uid)
+                              .snapshots(),
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData) {
+                          return const Text("Loading...");
+                        }
 
-                        // --- Greeting Text ---
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        final data =
+                            snapshot.data!.data() as Map<String, dynamic>? ??
+                            {};
+
+                        return Row(
                           children: [
-                            const Text(
-                              "Hello, how are you?",
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
+                            // Avatar
+                            CircleAvatar(
+                              radius: 22,
+                              backgroundColor: Colors.white,
+                              backgroundImage:
+                                  data['imageUrl'] != null
+                                      ? NetworkImage(data['imageUrl'])
+                                      : null,
+                              child:
+                                  data['imageUrl'] == null
+                                      ? Text(
+                                        (data['firstName'] ?? "U")[0]
+                                            .toUpperCase(),
+                                        style: const TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.blue,
+                                        ),
+                                      )
+                                      : null,
                             ),
-                            Text(
-                              data['firstName'] ?? widget.name ?? "User",
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: Colors.white,
-                              ),
+
+                            const SizedBox(width: 12),
+
+                            // Greeting text
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  "Hello, how are you?",
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Text(
+                                  data['firstName'] ?? "User",
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
-                        ),
-                      ],
+                        );
+                      },
                     );
                   },
                 )
@@ -195,10 +231,6 @@ class _CDashboardPageState extends State<CDashboardPage> {
                   ),
                 ),
 
-        // title: const Text(
-        //   'IPLANUGO',
-        //   style: TextStyle(fontWeight: FontWeight.w600, letterSpacing: 0.5),
-        // ),
         backgroundColor: Color(0xFF0064D2),
         foregroundColor: Colors.white,
         elevation: 0,
@@ -282,6 +314,7 @@ class _CDashboardPageState extends State<CDashboardPage> {
                     PopupMenuItem<int>(
                       value: 5,
                       child: ListTile(
+                        contentPadding: EdgeInsets.all(0),
                         leading: NotificationIcon(
                           onTap: () {
                             Navigator.push(
@@ -399,7 +432,7 @@ class _CDashboardPageState extends State<CDashboardPage> {
       body: _getPage(_selectedIndex),
       bottomNavigationBar: Container(
         width: double.minPositive,
-        margin: const EdgeInsets.all(24),
+        margin: const EdgeInsets.fromLTRB(24, 20, 24, 24),
         decoration: BoxDecoration(
           color: Colors.white.withOpacity(0.9),
           borderRadius: BorderRadius.circular(30),
