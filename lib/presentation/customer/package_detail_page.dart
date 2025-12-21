@@ -19,12 +19,18 @@ class _PackageDetailPageState extends State<PackageDetailPage> {
   final BasicService _basicService = BasicService();
   late Future<String?> role;
   late Future<String?> userId;
-
+  late Future<bool> isBooked;
   @override
   void initState() {
     super.initState();
+
     userId = _basicService.getUserId();
+
     role = userId.then((id) => _basicService.getUserRole(id ?? ""));
+
+    isBooked = userId.then(
+      (id) => _basicService.isPackageBookedByUser(widget.package.id, id),
+    );
   }
 
   @override
@@ -470,20 +476,17 @@ class _PackageDetailPageState extends State<PackageDetailPage> {
                 ],
               ),
             ),
-            // (user != null)
             SizedBox(
               height: 50,
-              child: FutureBuilder<String?>(
-                future: role,
+              child: FutureBuilder<List<dynamic>>(
+                future: Future.wait([role, isBooked]),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
                   }
-
-                  final userRole = snapshot.data;
-
                   // Not logged in
-                  if (userRole == null) {
+                  // if (userId != null && userId == Future.value(null))
+                  if (snapshot.data == null) {
                     return ElevatedButton(
                       onPressed: () {
                         Navigator.pushReplacement(
@@ -512,39 +515,51 @@ class _PackageDetailPageState extends State<PackageDetailPage> {
                       ),
                     );
                   }
+                  if (snapshot.hasData) {
+                    final userRole = snapshot.data?[0] as String?;
+                    final isBooked = snapshot.data![1] as bool;
 
-                  // Customer
-                  if (userRole == "customer") {
-                    return ElevatedButton(
-                      onPressed: () {
-                        Navigator.pushNamed(
-                          context,
-                          '/booking-page',
-                          arguments: {'packageId': widget.package.id},
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF0064D2),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 14,
+                    if (userRole == "customer" && isBooked) {
+                      return ElevatedButton(
+                        onPressed: null, // disabled
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.grey,
                         ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                        child: const Text("Already Booked"),
+                      );
+                    }
+                    // Customer
+                    if (userRole == "customer") {
+                      return ElevatedButton(
+                        onPressed: () {
+                          Navigator.pushNamed(
+                            context,
+                            '/booking-page',
+                            arguments: {'packageId': widget.package.id},
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF0064D2),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 14,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
                         ),
-                        elevation: 0,
-                      ),
-                      child: const Text(
-                        'Book Now',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
+                        child: const Text(
+                          'Book Now',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
-                    );
+                      );
+                    }
                   }
-
                   // Staff or Manager → no button
                   return const SizedBox.shrink();
                 },

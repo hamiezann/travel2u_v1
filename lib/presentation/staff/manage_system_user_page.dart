@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 // import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:travel2u_v1/presentation/widgets/custom_message_popup.dart';
 
 class ManageUserPage extends StatefulWidget {
   final String? userId;
@@ -97,13 +98,12 @@ class _ManageUserPageState extends State<ManageUserPage>
   }
 
   void _showSnackBar(String message, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: isError ? Colors.red.shade700 : staffColor,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      ),
+    MessagePopup.show(
+      context,
+      message: message,
+      type: isError ? MessageType.error : MessageType.info,
+      position: PopupPosition.top,
+      duration: const Duration(seconds: 3),
     );
   }
 
@@ -307,21 +307,6 @@ class _ManageUserPageState extends State<ManageUserPage>
 
                   try {
                     if (userId == null) {
-                      // UserCredential userCred = await FirebaseAuth.instance
-                      //     .createUserWithEmailAndPassword(
-                      //       email: email,
-                      //       password: defaultPassword,
-                      //     );
-                      // final newUserId = userCred.user!.uid;
-
-                      // final newDoc = _firestore
-                      //     .collection('users')
-                      //     .doc(newUserId);
-                      // await newDoc.set({
-                      //   ...data,
-                      //   'createdAt': FieldValue.serverTimestamp(),
-                      // });
-
                       final result = await createUserFn.call({
                         'email': email,
                         'password': defaultPassword,
@@ -329,21 +314,6 @@ class _ManageUserPageState extends State<ManageUserPage>
                         'firstName': name,
                         'phone': phone,
                       });
-
-                      // Cloud Function returns uid only
-                      // final dataMap = result.data as Map<String, dynamic>;
-                      // final newUserId = dataMap['uid'];
-
-                      // // Save to Firestore
-                      // await _firestore.collection('users').doc(newUserId).set({
-                      //   'userName': name,
-                      //   'email': email,
-                      //   'phone': phone,
-                      //   'role': role,
-                      //   'isActive': true,
-                      //   'createdAt': FieldValue.serverTimestamp(),
-                      //   'updatedAt': FieldValue.serverTimestamp(),
-                      // });
                     } else {
                       await _firestore
                           .collection('users')
@@ -360,8 +330,8 @@ class _ManageUserPageState extends State<ManageUserPage>
                       );
                     }
                   } catch (e, stack) {
-                    debugPrint("🔥 ERROR: $e");
-                    debugPrint("STACKTRACE: $stack");
+                    // debugPrint("🔥 ERROR: $e");
+                    // debugPrint("STACKTRACE: $stack");
                     _showSnackBar('Error saving user: $e', isError: true);
                   }
                 },

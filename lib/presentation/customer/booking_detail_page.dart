@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:travel2u_v1/presentation/customer/booking_review_page.dart';
 import 'package:travel2u_v1/presentation/customer/chat_page.dart';
+import 'package:travel2u_v1/presentation/widgets/custom_message_popup.dart';
 
 class BookingDetailPage extends StatefulWidget {
   final Map<String, dynamic> packageData;
@@ -265,6 +266,7 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
+      backgroundColor: Colors.lightBlue[50],
       builder:
           (_) => SingleChildScrollView(
             child: Padding(
@@ -287,9 +289,6 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
                   _input("Address", addressCtrl),
                   const SizedBox(height: 16),
                   ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                    ),
                     onPressed: () async {
                       await FirebaseFirestore.instance
                           .collection("bookings")
@@ -315,16 +314,46 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
                           "address": addressCtrl.text,
                         };
                       });
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Successfully update details'),
-                          backgroundColor: Colors.blue,
-                        ),
+                      MessagePopup.show(
+                        context,
+                        message: "Details updated successfully",
+                        type: MessageType.info,
+                        position: PopupPosition.top,
+                        duration: const Duration(seconds: 2),
                       );
+
                       Navigator.pop(context);
                     },
-                    child: Text("Save", style: TextStyle(color: Colors.white)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF0064D2),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      minimumSize: const Size(
+                        double.infinity,
+                        52,
+                      ), // full width, good height
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.save_outlined, size: 20),
+                        SizedBox(width: 10),
+                        Text(
+                          "Save Changes",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
+
                   SizedBox(height: 20),
                 ],
               ),
@@ -338,10 +367,37 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
       padding: const EdgeInsets.only(bottom: 12),
       child: TextField(
         controller: controller,
+        style: const TextStyle(fontSize: 15, color: Colors.black87),
         decoration: InputDecoration(
           labelText: label,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-          contentPadding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          labelStyle: const TextStyle(color: Colors.grey, fontSize: 14),
+
+          // ✅ Important for white background
+          filled: true,
+          fillColor: Colors.white,
+
+          contentPadding: const EdgeInsets.symmetric(
+            vertical: 14,
+            horizontal: 16,
+          ),
+
+          // Default border
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+
+          // Enabled but not focused
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+
+          // Focused state
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: Colors.blue.shade600, width: 1.5),
+          ),
         ),
       ),
     );
@@ -354,6 +410,7 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
+      backgroundColor: Colors.lightBlue[50],
       builder:
           (_) => StatefulBuilder(
             builder: (context, setModalState) {
@@ -459,11 +516,12 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
                     setState(() {
                       widget.bookingData['travelers'] = participants;
                     });
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Successfully update details'),
-                        backgroundColor: Colors.blue,
-                      ),
+                    MessagePopup.show(
+                      context,
+                      message: "Successfully update details",
+                      type: MessageType.info,
+                      position: PopupPosition.top,
+                      duration: const Duration(seconds: 2),
                     );
                     Navigator.pop(context);
                   },
@@ -734,174 +792,6 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
     );
   }
 
-  // Widget _buildItineraryCard() {
-  //   if (isLoadingItinerary) {
-  //     return _card(
-  //       child: Center(
-  //         child: Padding(
-  //           padding: const EdgeInsets.all(24.0),
-  //           child: CircularProgressIndicator(color: Colors.teal),
-  //         ),
-  //       ),
-  //     );
-  //   }
-
-  //   if (itinerary == null) {
-  //     return _card(
-  //       child: Padding(
-  //         padding: const EdgeInsets.all(24.0),
-  //         child: Center(
-  //           child: Column(
-  //             children: [
-  //               Icon(Icons.map_outlined, size: 48, color: Colors.grey[400]),
-  //               const SizedBox(height: 12),
-  //               Text(
-  //                 "No itinerary generated yet",
-  //                 style: TextStyle(color: Colors.grey[600], fontSize: 14),
-  //               ),
-  //             ],
-  //           ),
-  //         ),
-  //       ),
-  //     );
-  //   }
-
-  //   final days = itinerary!['days'] ?? [];
-  //   // final status = widget.bookingData['itineraryStatus'] ?? "pending";
-  //   final status = itinerary!['status'] ?? "pending";
-
-  //   return _card(
-  //     child: Column(
-  //       crossAxisAlignment: CrossAxisAlignment.start,
-  //       children: [
-  //         _sectionTitle("Itinerary", Icons.map_outlined),
-
-  //         // Status with color-coded badge
-  //         Row(
-  //           children: [
-  //             Text(
-  //               "Status: ",
-  //               style: TextStyle(
-  //                 fontWeight: FontWeight.w600,
-  //                 fontSize: 14,
-  //                 color: Colors.grey[700],
-  //               ),
-  //             ),
-  //             Container(
-  //               padding: const EdgeInsets.symmetric(
-  //                 horizontal: 12,
-  //                 vertical: 6,
-  //               ),
-  //               decoration: BoxDecoration(
-  //                 color: _getStatusColor(status),
-  //                 borderRadius: BorderRadius.circular(20),
-  //               ),
-  //               child: Text(
-  //                 status.toUpperCase(),
-  //                 style: const TextStyle(
-  //                   color: Colors.white,
-  //                   fontSize: 12,
-  //                   fontWeight: FontWeight.bold,
-  //                   letterSpacing: 0.5,
-  //                 ),
-  //               ),
-  //             ),
-  //           ],
-  //         ),
-
-  //         // Notes section
-  //         if (itinerary!['generationNotes'] != null &&
-  //             itinerary!['generationNotes'].toString().trim().isNotEmpty) ...[
-  //           const SizedBox(height: 16),
-  //           Container(
-  //             padding: const EdgeInsets.all(12),
-  //             decoration: BoxDecoration(
-  //               color: Colors.blue.shade50,
-  //               borderRadius: BorderRadius.circular(8),
-  //               border: Border.all(color: Colors.blue.shade100),
-  //             ),
-  //             child: Row(
-  //               crossAxisAlignment: CrossAxisAlignment.start,
-  //               children: [
-  //                 Icon(
-  //                   Icons.info_outline,
-  //                   size: 18,
-  //                   color: Colors.blue.shade700,
-  //                 ),
-  //                 const SizedBox(width: 8),
-  //                 Expanded(
-  //                   child: Column(
-  //                     crossAxisAlignment: CrossAxisAlignment.start,
-  //                     children: [
-  //                       Text(
-  //                         "Notes",
-  //                         style: TextStyle(
-  //                           fontWeight: FontWeight.bold,
-  //                           fontSize: 13,
-  //                           color: Colors.blue.shade900,
-  //                         ),
-  //                       ),
-  //                       const SizedBox(height: 4),
-  //                       Text(
-  //                         itinerary!['generationNotes'],
-  //                         style: TextStyle(
-  //                           fontSize: 13,
-  //                           color: Colors.blue.shade900,
-  //                         ),
-  //                       ),
-  //                     ],
-  //                   ),
-  //                 ),
-  //               ],
-  //             ),
-  //           ),
-  //         ],
-
-  //         const SizedBox(height: 20),
-
-  //         // Days section
-  //         if (days.isNotEmpty) ...[
-  //           Row(
-  //             children: [
-  //               Icon(Icons.calendar_today, size: 16, color: Colors.grey[600]),
-  //               const SizedBox(width: 6),
-  //               Text(
-  //                 "${days.length} ${days.length == 1 ? 'Day' : 'Days'}",
-  //                 style: TextStyle(
-  //                   fontSize: 14,
-  //                   fontWeight: FontWeight.w600,
-  //                   color: Colors.grey[700],
-  //                 ),
-  //               ),
-  //             ],
-  //           ),
-  //           const SizedBox(height: 12),
-  //         ],
-
-  //         ...days.asMap().entries.map((entry) {
-  //           final index = entry.key;
-  //           final day = entry.value;
-  //           return Padding(
-  //             padding: const EdgeInsets.only(bottom: 12),
-  //             child: _buildDayCard(index + 1, day),
-  //           );
-  //         }).toList(),
-
-  //         if (days.isEmpty)
-  //           Center(
-  //             child: Padding(
-  //               padding: const EdgeInsets.symmetric(vertical: 16),
-  //               child: Text(
-  //                 "No days scheduled",
-  //                 style: TextStyle(color: Colors.grey[500], fontSize: 14),
-  //               ),
-  //             ),
-  //           ),
-  //       ],
-  //     ),
-  //   );
-  // }
-
   // Helper method to get status color
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
@@ -918,53 +808,53 @@ class _BookingDetailPageState extends State<BookingDetailPage> {
     }
   }
 
-  Widget _buildDayCard(int displayDay, Map day) {
-    final activities = day['activities'] ?? [];
-    return Container(
-      margin: EdgeInsets.only(bottom: 16),
-      padding: EdgeInsets.all(16),
-      decoration: _box,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text("Day $displayDay", style: _subtitle),
-          const SizedBox(height: 10),
-          if (activities.isEmpty)
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Color(0xFFF1F5F9),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text("No activities planned for this day.", style: _sub),
-            )
-          else
-            ...activities.map<Widget>((a) {
-              return Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(a['name'] ?? "-", style: _travName),
-                    const SizedBox(height: 6),
-                    Text("Type: ${a['type']}", style: _sub),
-                    Text("Location: ${a['location']}", style: _sub),
-                    Text("Time: ${a['duration']}", style: _sub),
-                    if (a['foodType'] != null)
-                      Text("Food: ${a['foodType'].join(', ')}", style: _sub),
-                  ],
-                ),
-              );
-            }).toList(),
-        ],
-      ),
-    );
-  }
+  // Widget _buildDayCard(int displayDay, Map day) {
+  //   final activities = day['activities'] ?? [];
+  //   return Container(
+  //     margin: EdgeInsets.only(bottom: 16),
+  //     padding: EdgeInsets.all(16),
+  //     decoration: _box,
+  //     child: Column(
+  //       crossAxisAlignment: CrossAxisAlignment.start,
+  //       children: [
+  //         Text("Day $displayDay", style: _subtitle),
+  //         const SizedBox(height: 10),
+  //         if (activities.isEmpty)
+  //           Container(
+  //             padding: const EdgeInsets.all(12),
+  //             decoration: BoxDecoration(
+  //               color: Color(0xFFF1F5F9),
+  //               borderRadius: BorderRadius.circular(8),
+  //             ),
+  //             child: Text("No activities planned for this day.", style: _sub),
+  //           )
+  //         else
+  //           ...activities.map<Widget>((a) {
+  //             return Container(
+  //               margin: const EdgeInsets.only(bottom: 12),
+  //               padding: const EdgeInsets.all(12),
+  //               decoration: BoxDecoration(
+  //                 color: Color(0xFFF1F5F9),
+  //                 borderRadius: BorderRadius.circular(8),
+  //               ),
+  //               child: Column(
+  //                 crossAxisAlignment: CrossAxisAlignment.start,
+  //                 children: [
+  //                   Text(a['name'] ?? "-", style: _travName),
+  //                   const SizedBox(height: 6),
+  //                   Text("Type: ${a['type']}", style: _sub),
+  //                   Text("Location: ${a['location']}", style: _sub),
+  //                   Text("Time: ${a['duration']}", style: _sub),
+  //                   if (a['foodType'] != null)
+  //                     Text("Food: ${a['foodType'].join(', ')}", style: _sub),
+  //                 ],
+  //               ),
+  //             );
+  //           }).toList(),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   Widget _buildBottomButtons() {
     final booking = widget.bookingData;

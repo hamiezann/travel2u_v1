@@ -157,15 +157,6 @@ class _SDashboardPageState extends State<SDashboardPage> {
                         ),
                         TextButton(
                           onPressed: () async {
-                            // Navigator.of(context).pop();
-                            // await authService.logout();
-                            // if (context.mounted) {
-                            //   Navigator.pushNamedAndRemoveUntil(
-                            //     context,
-                            //     '/login',
-                            //     (route) => false,
-                            //   );
-                            // }
                             navigator.pop(); // close dialog
                             await authService.logout();
 

@@ -9,6 +9,7 @@ import 'package:multi_select_flutter/dialog/multi_select_dialog_field.dart';
 import 'package:multi_select_flutter/util/multi_select_item.dart';
 import 'package:travel2u_v1/core/models/activity.dart';
 import 'package:travel2u_v1/core/models/travel_package.dart';
+import 'package:travel2u_v1/presentation/widgets/custom_message_popup.dart';
 import 'package:travel2u_v1/presentation/widgets/custom_step_indicator.dart';
 
 class CreateOrEditTravelPackagePage extends StatefulWidget {
@@ -35,6 +36,7 @@ class _CreateOrEditTravelPackagePageState
     travelDate: DateTime.now(),
     price: 0.0,
     imageUrl: '',
+    paxType: '',
     tourGuide: '',
     flightDetail: '',
     flightClass: '',
@@ -52,10 +54,11 @@ class _CreateOrEditTravelPackagePageState
   DateTimeRange? _selectedDateRange;
   final _travelDateController = TextEditingController();
   final _priceController = TextEditingController();
-  final _imageUrlController = TextEditingController(); // before this var
-  var _tourGuideController = TextEditingController();
+  final _imageUrlController = TextEditingController();
+  // var _tourGuideController = TextEditingController();
   final _hotelDetailController = TextEditingController();
   final _hotelRatingController = TextEditingController();
+  final _paxTypeController = TextEditingController();
   final _flightClassController = TextEditingController();
   final _flightDetailController = TextEditingController();
 
@@ -73,18 +76,24 @@ class _CreateOrEditTravelPackagePageState
     "5 Star",
   ];
 
-  final List<String> _timeSlots = [
-    '08:00 - 10:00',
-    '10:00 - 12:00',
-    '12:00 - 14:00',
-    '14:00 - 16:00',
-    '16:00 - 18:00',
-    '18:00 - 20:00',
-    '20:00 - 22:00',
-    '22:00 - 00:00',
-  ];
+  // final List<String> _timeSlots = [
+  //   '08:00 - 10:00',
+  //   '10:00 - 12:00',
+  //   '12:00 - 14:00',
+  //   '14:00 - 16:00',
+  //   '16:00 - 18:00',
+  //   '18:00 - 20:00',
+  //   '20:00 - 22:00',
+  //   '22:00 - 00:00',
+  // ];
 
-  // List<String> selectedSlots = [];
+  final List<String> _timeSlots = List.generate(
+    24,
+    (i) => '${i.toString().padLeft(2, '0')}:00',
+  );
+
+  final List<String> _paxTypes = ['Group', 'Family', 'Solo'];
+
   List<String> _selectedTags = [];
   List<String> _selectedFoodTypes = [];
   String _selectedActivityTypes = '';
@@ -93,6 +102,7 @@ class _CreateOrEditTravelPackagePageState
   List<String> _flightAirlineList = [];
   List<String> _activityTypesList = [];
   List _staffNames = [];
+  String _staffName = '';
   bool _isLoadingTags = true;
   bool _isLoadingStaffNames = false;
   File? _selectedImageFile;
@@ -122,9 +132,10 @@ class _CreateOrEditTravelPackagePageState
     _destinationController.addListener(_markAsChanged);
     _durationController.addListener(_markAsChanged);
     _priceController.addListener(_markAsChanged);
-    _tourGuideController.addListener(_markAsChanged);
+    // _tourGuideController.addListener(_markAsChanged);
     _hotelDetailController.addListener(_markAsChanged);
     _hotelRatingController.addListener(_markAsChanged);
+    _paxTypeController.addListener(_markAsChanged);
     _flightClassController.addListener(_markAsChanged);
     _flightDetailController.addListener(_markAsChanged);
   }
@@ -148,7 +159,6 @@ class _CreateOrEditTravelPackagePageState
       if (doc.exists) {
         final data = doc.data();
         // debugPrint('Fetched data: ${doc.data()}');
-
         if (data != null) {
           setState(() {
             _travelPackage = TravelPackage.fromJson(data);
@@ -163,8 +173,6 @@ class _CreateOrEditTravelPackagePageState
                 activity.duration.split(',').map((s) => s.trim()),
               );
             }
-
-            // 🧭 Ensure current day starts at 1
             _currentDay = 1;
             _nameController.text = _travelPackage.name;
             _destinationController.text = _travelPackage.destination;
@@ -173,9 +181,10 @@ class _CreateOrEditTravelPackagePageState
                 "${_travelPackage.travelDate.toLocal()}".split(' ')[0];
             _priceController.text = _travelPackage.price.toString();
             _imageUrlController.text = _travelPackage.imageUrl;
-            _tourGuideController.text = _travelPackage.tourGuide;
+            // _tourGuideController.text = _travelPackage.tourGuide;
             _hotelDetailController.text = _travelPackage.hotelDetail;
             _hotelRatingController.text = _travelPackage.hotelRating;
+            _paxTypeController.text = _travelPackage.paxType;
             _flightDetailController.text = _travelPackage.flightDetail;
             _flightClassController.text = _travelPackage.flightClass;
             _selectedTags = _travelPackage.tags;
@@ -238,6 +247,8 @@ class _CreateOrEditTravelPackagePageState
 
   Future<void> _fetchStaffNames() async {
     try {
+      final user = FirebaseAuth.instance.currentUser;
+
       final querySnapshot =
           await FirebaseFirestore.instance
               .collection('users')
@@ -246,6 +257,11 @@ class _CreateOrEditTravelPackagePageState
       debugPrint(
         querySnapshot.docs.map((doc) => doc.data()).toList().toString(),
       );
+      final userData =
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user!.uid)
+              .get();
       final names =
           querySnapshot.docs
               .map((doc)
@@ -256,9 +272,10 @@ class _CreateOrEditTravelPackagePageState
               })
               .where((name) => name.isNotEmpty)
               .toList();
-
-      setState(() {
+      final currUserName = userData.data()?['firstName'] ?? '';
+      final staffName = setState(() {
         _staffNames = names;
+        _staffName = currUserName;
         _isLoadingStaffNames = false;
       });
     } catch (e) {
@@ -382,18 +399,18 @@ class _CreateOrEditTravelPackagePageState
         }
       }
 
-      if (!allDaysFilled) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Please fill all 8 activity slots for each day before saving.',
-            ),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
-        setState(() => _isSavingLoading = false);
-        return;
-      }
+      // if (!allDaysFilled) {
+      //   ScaffoldMessenger.of(context).showSnackBar(
+      //     const SnackBar(
+      //       content: Text(
+      //         'Please fill all 8 activity slots for each day before saving.',
+      //       ),
+      //       backgroundColor: Colors.redAccent,
+      //     ),
+      //   );
+      //   setState(() => _isSavingLoading = false);
+      //   return;
+      // }
 
       final travelCollection = FirebaseFirestore.instance.collection(
         'travel_packages',
@@ -437,9 +454,11 @@ class _CreateOrEditTravelPackagePageState
         'travelDate': _travelPackage.travelDate.toIso8601String(),
         'price': _travelPackage.price,
         'imageUrl': _travelPackage.imageUrl,
-        'tourGuide': _travelPackage.tourGuide,
+        // 'tourGuide': _travelPackage.tourGuide,
+        'tourGuide': _staffName,
         'hotelDetail': _travelPackage.hotelDetail,
         'hotelRating': _travelPackage.hotelRating,
+        'paxType': _travelPackage.paxType,
         'flightDetail': _travelPackage.flightDetail,
         'flightClass': _travelPackage.flightClass,
         'tags': _travelPackage.tags,
@@ -455,14 +474,15 @@ class _CreateOrEditTravelPackagePageState
           ? travelCollection.doc(_travelPackage.id).update(packageData)
           : travelCollection.doc(_travelPackage.id).set(packageData));
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
+      MessagePopup.show(
+        context,
+        message:
             isEditMode
-                ? 'Travel Package updated successfully!'
-                : 'Travel Package added successfully!',
-          ),
-        ),
+                ? "Travel Package updated succesfully!"
+                : "Travel Package added succesfully!",
+        type: MessageType.success,
+        position: PopupPosition.top,
+        duration: const Duration(seconds: 3),
       );
 
       // 🧹 Reset after saving
@@ -480,6 +500,7 @@ class _CreateOrEditTravelPackagePageState
           price: 0.0,
           imageUrl: '',
           hotelDetail: '',
+          paxType: '',
           hotelRating: '',
           flightDetail: '',
           flightClass: '',
@@ -494,9 +515,13 @@ class _CreateOrEditTravelPackagePageState
       Navigator.popAndPushNamed(context, '/staff/manage-travel');
     } catch (e) {
       setState(() => _isSavingLoading = false);
-      ScaffoldMessenger.of(
+      MessagePopup.show(
         context,
-      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        message: "Error: $e",
+        type: MessageType.error,
+        position: PopupPosition.top,
+        duration: const Duration(seconds: 4),
+      );
     }
   }
 
@@ -506,9 +531,10 @@ class _CreateOrEditTravelPackagePageState
     _destinationController.removeListener(_markAsChanged);
     _durationController.removeListener(_markAsChanged);
     _priceController.removeListener(_markAsChanged);
-    _tourGuideController.removeListener(_markAsChanged);
+    // _tourGuideController.removeListener(_markAsChanged);
     _hotelDetailController.removeListener(_markAsChanged);
     _hotelRatingController.removeListener(_markAsChanged);
+    _paxTypeController.removeListener(_markAsChanged);
     _flightDetailController.removeListener(_markAsChanged);
     _flightClassController.removeListener(_markAsChanged);
     // _imageUrlController.removeListener(_markAsChanged);
@@ -553,9 +579,10 @@ class _CreateOrEditTravelPackagePageState
     _travelPackage.price = double.tryParse(_priceController.text) ?? 0.0;
     _travelPackage.imageUrl = _imageUrlController.text;
     _travelPackage.tags = _selectedTags;
-    _travelPackage.tourGuide = _tourGuideController.text;
+    // _travelPackage.tourGuide = _tourGuideController.text;
     _travelPackage.hotelDetail = _hotelDetailController.text;
     _travelPackage.hotelRating = _hotelRatingController.text;
+    _travelPackage.paxType = _paxTypeController.text;
     _travelPackage.flightDetail = _flightDetailController.text;
     _travelPackage.flightClass = _flightClassController.text;
     if (_selectedDateRange != null) {
@@ -834,55 +861,55 @@ class _CreateOrEditTravelPackagePageState
                       : null,
         ),
         const SizedBox(height: 16),
-        Autocomplete<String>(
-          initialValue: TextEditingValue(text: _tourGuideController.text),
-          optionsBuilder: (TextEditingValue textEditingValue) {
-            if (textEditingValue.text.isEmpty) {
-              return const Iterable<String>.empty();
-            }
-            return _staffNames
-                .cast<String>()
-                .where(
-                  (option) => option.toLowerCase().contains(
-                    textEditingValue.text.toLowerCase(),
-                  ),
-                )
-                .toList();
-          },
-          fieldViewBuilder: (
-            BuildContext context,
-            TextEditingController fieldTextEditingController,
-            FocusNode fieldFocusNode,
-            VoidCallback onFieldSubmitted,
-          ) {
-            // _tourGuideController = fieldTextEditingController;
-            return TextFormField(
-              controller: fieldTextEditingController,
-              // controller: _tourGuideController,
-              focusNode: fieldFocusNode,
-              decoration: InputDecoration(
-                labelText: 'Tour Guide Name',
-                prefixIcon: const Icon(Icons.hail_outlined),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                filled: true,
-                fillColor: Colors.grey.shade50,
-              ),
-              validator:
-                  (value) =>
-                      (value == null || value.isEmpty)
-                          ? 'Please enter tour guide name'
-                          : null,
-            );
-          },
-          onSelected: (String selection) {
-            debugPrint('Selected: $selection');
-            _tourGuideController.text = selection;
-          },
-        ),
+        // Autocomplete<String>(
+        //   initialValue: TextEditingValue(text: _tourGuideController.text),
+        //   optionsBuilder: (TextEditingValue textEditingValue) {
+        //     if (textEditingValue.text.isEmpty) {
+        //       return const Iterable<String>.empty();
+        //     }
+        //     return _staffNames
+        //         .cast<String>()
+        //         .where(
+        //           (option) => option.toLowerCase().contains(
+        //             textEditingValue.text.toLowerCase(),
+        //           ),
+        //         )
+        //         .toList();
+        //   },
+        //   fieldViewBuilder: (
+        //     BuildContext context,
+        //     TextEditingController fieldTextEditingController,
+        //     FocusNode fieldFocusNode,
+        //     VoidCallback onFieldSubmitted,
+        //   ) {
+        //     // _tourGuideController = fieldTextEditingController;
+        //     return TextFormField(
+        //       controller: fieldTextEditingController,
+        //       // controller: _tourGuideController,
+        //       focusNode: fieldFocusNode,
+        //       decoration: InputDecoration(
+        //         labelText: 'Tour Guide Name',
+        //         prefixIcon: const Icon(Icons.hail_outlined),
+        //         border: OutlineInputBorder(
+        //           borderRadius: BorderRadius.circular(12),
+        //         ),
+        //         filled: true,
+        //         fillColor: Colors.grey.shade50,
+        //       ),
+        //       validator:
+        //           (value) =>
+        //               (value == null || value.isEmpty)
+        //                   ? 'Please enter tour guide name'
+        //                   : null,
+        //     );
+        //   },
+        //   onSelected: (String selection) {
+        //     debugPrint('Selected: $selection');
+        //     _tourGuideController.text = selection;
+        //   },
+        // ),
 
-        const SizedBox(height: 16),
+        // const SizedBox(height: 16),
         DropdownButtonFormField<String>(
           value:
               _flightClassList.contains(_flightClassController.text)
@@ -959,6 +986,27 @@ class _CreateOrEditTravelPackagePageState
           decoration: InputDecoration(
             labelText: 'Hotel Rating',
             prefixIcon: const Icon(Icons.hotel_class),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            filled: true,
+            fillColor: Colors.grey.shade50,
+          ),
+        ),
+        const SizedBox(height: 16),
+        DropdownButtonFormField<String>(
+          value:
+              _paxTypes.contains(_paxTypeController.text)
+                  ? _paxTypeController.text
+                  : null,
+          items:
+              _paxTypes.map((type) {
+                return DropdownMenuItem<String>(value: type, child: Text(type));
+              }).toList(),
+          onChanged: (value) {
+            setState(() => _paxTypeController.text = value ?? '');
+          },
+          decoration: InputDecoration(
+            labelText: 'Pax Type',
+            prefixIcon: const Icon(Icons.people_rounded),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             filled: true,
             fillColor: Colors.grey.shade50,
@@ -1185,7 +1233,8 @@ class _CreateOrEditTravelPackagePageState
           final idController = TextEditingController();
           final nameController = TextEditingController();
           final locationController = TextEditingController();
-          List<String> localSelectedSlots = [];
+          // List<String> localSelectedSlots = [];
+          String localSelectedSlot = '';
 
           return StatefulBuilder(
             builder: (context, setStateDialog) {
@@ -1274,46 +1323,91 @@ class _CreateOrEditTravelPackagePageState
                           const SizedBox(height: 16),
 
                           const Text(
-                            'Select Duration Slots',
+                            'Select Time Slots',
                             style: TextStyle(fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 8),
 
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children:
+                          DropdownButtonFormField<String>(
+                            decoration: InputDecoration(
+                              labelText: 'Select Time',
+                              // border: OutlineInputBorder(),
+                              prefixIcon: const Icon(Icons.category),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              filled: true,
+                              fillColor: Colors.grey.shade50,
+                            ),
+                            value:
+                                localSelectedSlot.isNotEmpty
+                                    ? localSelectedSlot
+                                    : null,
+                            items:
                                 _timeSlots.map((slot) {
-                                  // Disable slot if already used for this day
-                                  bool isTaken =
+                                  final bool isTaken =
                                       _takenSlotsByDay[_currentDay]?.contains(
                                         slot,
                                       ) ??
                                       false;
 
-                                  return FilterChip(
-                                    label: Text(slot),
-                                    selected: localSelectedSlots.contains(slot),
-                                    onSelected:
-                                        isTaken
-                                            ? null
-                                            : (selected) {
-                                              setStateDialog(() {
-                                                if (selected) {
-                                                  localSelectedSlots.add(slot);
-                                                } else {
-                                                  localSelectedSlots.remove(
-                                                    slot,
-                                                  );
-                                                }
-                                              });
-                                            },
-                                    selectedColor: Colors.blue.shade100,
-                                    disabledColor: Colors.grey.shade200,
+                                  return DropdownMenuItem<String>(
+                                    value: isTaken ? null : slot,
+                                    enabled: !isTaken,
+                                    child: Text(
+                                      slot,
+                                      style: TextStyle(
+                                        color:
+                                            isTaken
+                                                ? Colors.grey
+                                                : Colors.black,
+                                      ),
+                                    ),
                                   );
                                 }).toList(),
+                            onChanged: (value) {
+                              if (value == null) return;
+
+                              setStateDialog(() {
+                                localSelectedSlot = value;
+                              });
+                            },
                           ),
                           const SizedBox(height: 16),
+                          // Wrap(
+                          //   spacing: 8,
+                          //   runSpacing: 8,
+                          //   children:
+                          //       _timeSlots.map((slot) {
+                          //         // Disable slot if already used for this day
+                          //         bool isTaken =
+                          //             _takenSlotsByDay[_currentDay]?.contains(
+                          //               slot,
+                          //             ) ??
+                          //             false;
+                          //         return FilterChip(
+                          //           label: Text(slot),
+                          //           selected: localSelectedSlots.contains(slot),
+                          //           onSelected:
+                          //               isTaken
+                          //                   ? null
+                          //                   : (selected) {
+                          //                     setStateDialog(() {
+                          //                       if (selected) {
+                          //                         localSelectedSlots.add(slot);
+                          //                       } else {
+                          //                         localSelectedSlots.remove(
+                          //                           slot,
+                          //                         );
+                          //                       }
+                          //                     });
+                          //                   },
+                          //           selectedColor: Colors.blue.shade100,
+                          //           disabledColor: Colors.grey.shade200,
+                          //         );
+                          //       }).toList(),
+                          // ),
+                          // const SizedBox(height: 16),
 
                           // Location
                           TextField(
@@ -1371,37 +1465,39 @@ class _CreateOrEditTravelPackagePageState
                               const SizedBox(width: 12),
                               ElevatedButton(
                                 onPressed: () {
-                                  if (localSelectedSlots.isEmpty) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                          'Please select at least one time slot',
-                                        ),
-                                      ),
+                                  if (localSelectedSlot.isEmpty) {
+                                    MessagePopup.show(
+                                      context,
+                                      message:
+                                          "Please select at least one time slot",
+                                      type: MessageType.warning,
+                                      position: PopupPosition.top,
+                                      duration: const Duration(seconds: 2),
                                     );
                                     return;
                                   }
 
                                   // Prevent exceeding 8 slots per day
-                                  if ((_takenSlotsByDay[_currentDay]?.length ??
-                                              0) +
-                                          localSelectedSlots.length >
-                                      8) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                          'Maximum 8 slots per day allowed',
-                                        ),
-                                      ),
-                                    );
-                                    return;
-                                  }
+                                  // if ((_takenSlotsByDay[_currentDay]?.length ??
+                                  //             0) +
+                                  //         localSelectedSlots.length >
+                                  //     8) {
+                                  //   ScaffoldMessenger.of(context).showSnackBar(
+                                  //     const SnackBar(
+                                  //       content: Text(
+                                  //         'Maximum 8 slots per day allowed',
+                                  //       ),
+                                  //     ),
+                                  //   );
+                                  //   return;
+                                  // }
 
                                   final newActivity = Activity(
                                     id: idController.text.trim(),
                                     name: nameController.text.trim(),
                                     type: _selectedActivityTypes.trim(),
-                                    duration: localSelectedSlots.join(', '),
+                                    // duration: localSelectedSlots.join(', '),
+                                    duration: localSelectedSlot.trim(),
                                     location: locationController.text.trim(),
                                     foodType: _selectedFoodTypes,
                                     day: _currentDay,
@@ -1413,10 +1509,10 @@ class _CreateOrEditTravelPackagePageState
                                     );
 
                                     // Mark selected slots as taken
-                                    _takenSlotsByDay[_currentDay] ??= [];
-                                    _takenSlotsByDay[_currentDay]!.addAll(
-                                      localSelectedSlots,
-                                    );
+                                    // _takenSlotsByDay[_currentDay] ??= [];
+                                    // _takenSlotsByDay[_currentDay]!.addAll(
+                                    //   localSelectedSlots,
+                                    // );
                                   });
 
                                   Navigator.pop(context);
@@ -1583,7 +1679,7 @@ class _CreateOrEditTravelPackagePageState
                         _buildDetailRow(Icons.category, 'Type', activity.type),
                         _buildDetailRow(
                           Icons.schedule,
-                          'Duration',
+                          'Time',
                           activity.duration,
                         ),
                         _buildDetailRow(
@@ -1630,7 +1726,8 @@ class _CreateOrEditTravelPackagePageState
                   });
                 },
               ),
-            if (_currentDay < totalDays && isDayFull(_currentDay))
+            if (_currentDay < totalDays)
+              // if (_currentDay < totalDays && isDayFull(_currentDay))
               ElevatedButton.icon(
                 icon: const Icon(Icons.arrow_forward),
                 label: Text(
@@ -1714,7 +1811,7 @@ class _CreateOrEditTravelPackagePageState
               ),
               _buildSummaryRow(
                 Icons.calendar_today,
-                'Duration',
+                'Time',
                 '${_travelPackage.duration} days',
               ),
               _buildSummaryRow(

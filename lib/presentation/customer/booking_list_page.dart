@@ -46,11 +46,14 @@ class _MyTripsPageState extends State<MyTripsPage> {
             ),
           ),
           Expanded(
-            child: TabBarView(
-              children: [
-                _buildTrips(context, completed: false),
-                _buildTrips(context, completed: true),
-              ],
+            child: Container(
+              color: Color(0xFFEFE9E3),
+              child: TabBarView(
+                children: [
+                  _buildTrips(context, completed: false),
+                  _buildTrips(context, completed: true),
+                ],
+              ),
             ),
           ),
         ],
@@ -77,12 +80,12 @@ class _MyTripsPageState extends State<MyTripsPage> {
         final trips = docs.map((d) => d.data()).toList();
 
         // Split by complete or upcoming
-        final now = DateTime.now();
+        // final now = DateTime.now();
 
         final filtered =
             trips.where((trip) {
               final status = trip['status'] ?? "";
-              final date = DateTime.tryParse(trip['travelDate'] ?? "") ?? now;
+              // final date = DateTime.tryParse(trip['travelDate'] ?? "") ?? now;
 
               if (completed) {
                 return status == "completed";
@@ -131,15 +134,14 @@ class _MyTripsPageState extends State<MyTripsPage> {
 
     // int daysLeft = travelDate != null ? travelDate.difference(now).inDays : 0;
     final packageId = trip["packageId"] ?? "";
-    final status = trip["itineraryStatus"] ?? "";
-    // debugPrint("daysleft: $daysLeft");
+    // final status = trip["itineraryStatus"] ?? "";
     return FutureBuilder(
       future: _fetchPackageDetails(packageId),
       builder: (context, snapshot) {
         final pkg = snapshot.data;
 
         final imageUrl = pkg?["imageUrl"] ?? "";
-        final packageName = pkg?["name"] ?? "Unknown Package";
+        // final packageName = pkg?["name"] ?? "Unknown Package";
         final destination = pkg?["destination"] ?? "Unknown";
 
         return InkWell(
@@ -243,57 +245,6 @@ class _MyTripsPageState extends State<MyTripsPage> {
           ),
         );
       },
-    );
-  }
-
-  void _showFeedbackDialog(BuildContext context, Map trip) {
-    final rating = TextEditingController();
-    final comments = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder:
-          (c) => AlertDialog(
-            title: const Text('Submit Feedback'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: rating,
-                  decoration: const InputDecoration(
-                    labelText: 'Rating (1–5)',
-                    border: OutlineInputBorder(),
-                  ),
-                  keyboardType: TextInputType.number,
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: comments,
-                  decoration: const InputDecoration(
-                    labelText: 'Comments',
-                    border: OutlineInputBorder(),
-                  ),
-                  maxLines: 3,
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(c),
-                child: const Text('Cancel'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  // TODO save feedback to Firestore
-                  Navigator.pop(c);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Feedback submitted!')),
-                  );
-                },
-                child: const Text('Submit'),
-              ),
-            ],
-          ),
     );
   }
 }

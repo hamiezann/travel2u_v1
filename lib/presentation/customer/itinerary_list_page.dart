@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:travel2u_v1/presentation/widgets/custom_message_popup.dart';
 
 class ItinerariesPage extends StatefulWidget {
   const ItinerariesPage({super.key});
@@ -157,8 +158,12 @@ class _ItinerariesPageState extends State<ItinerariesPage> {
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Itinerary downloaded!')),
+                  MessagePopup.show(
+                    context,
+                    message: "Itinerary donwloaded",
+                    type: MessageType.info,
+                    position: PopupPosition.top,
+                    duration: const Duration(seconds: 2),
                   );
                 },
                 icon: const Icon(Icons.download),

@@ -1,4 +1,3 @@
-// Traveloka-inspired PackagesPage
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -7,6 +6,7 @@ import 'package:travel2u_v1/core/models/travel_package.dart';
 import 'package:travel2u_v1/presentation/customer/package_detail_page.dart';
 // import 'package:travel2u_v1/presentation/widgets/ads_placeholder.dart';
 import 'package:travel2u_v1/presentation/widgets/carousel_slider.dart';
+import 'package:travel2u_v1/presentation/widgets/custom_message_popup.dart';
 import 'package:travel2u_v1/presentation/widgets/popular_packages_section.dart';
 
 class PackagesPage extends StatefulWidget {
@@ -91,9 +91,12 @@ class _PackagesPageState extends State<PackagesPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() => isLoading = false);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error fetching travel packages: $e')),
+      MessagePopup.show(
+        context,
+        message: "Error fetching travel packages: $e",
+        type: MessageType.error,
+        position: PopupPosition.top,
+        duration: const Duration(seconds: 2),
       );
     }
   }
@@ -238,7 +241,8 @@ class _PackagesPageState extends State<PackagesPage> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color(0xFFF7F9FC),
+      // color: const Color(0xFFF7F9FC),
+      color: const Color(0xFFEFE9E3),
       child: Column(
         children: [
           Container(
@@ -564,8 +568,6 @@ class _PackagesPageState extends State<PackagesPage> {
     TravelPackage package,
     int index,
   ) {
-    // if (user == null) return SizedBox();
-    // final userId = user!.uid;
     final userId = user?.uid; // may be null
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
@@ -837,20 +839,57 @@ class _PackagesPageState extends State<PackagesPage> {
                       ),
                       const SizedBox(width: 10),
                       userId == null
-                          ? IconButton(
-                            onPressed: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    "Please log in to save to wishlist",
+                          ? Row(
+                            children: [
+                              IconButton(
+                                onPressed: () {
+                                  MessagePopup.show(
+                                    context,
+                                    message:
+                                        "Please log in to save to wishlist",
+                                    type: MessageType.warning,
+                                    position: PopupPosition.top,
+                                    duration: const Duration(seconds: 2),
+                                  );
+                                },
+                                icon: const Icon(
+                                  Icons.favorite_border,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                              ElevatedButton(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder:
+                                          (_) => PackageDetailPage(
+                                            package: package,
+                                          ),
+                                    ),
+                                  );
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Color(0xFF0064D2),
+                                  foregroundColor: Colors.white,
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 24,
+                                    vertical: 12,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  elevation: 0,
+                                ),
+                                child: Text(
+                                  'Trip Details',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
-                              );
-                            },
-                            icon: const Icon(
-                              Icons.favorite_border,
-                              color: Colors.grey,
-                            ),
+                              ),
+                            ],
                           )
                           : Row(
                             mainAxisAlignment: MainAxisAlignment.end,

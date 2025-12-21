@@ -3,6 +3,7 @@ import 'package:travel2u_v1/core/services/auth_service.dart';
 import 'package:travel2u_v1/presentation/auth/register.dart';
 import 'package:travel2u_v1/presentation/auth/role_redirect.dart';
 import 'package:travel2u_v1/presentation/customer/cdashboard.dart';
+import 'package:travel2u_v1/presentation/widgets/custom_message_popup.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -46,8 +47,12 @@ class _LoginPageState extends State<LoginPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+        MessagePopup.show(
+          context,
+          message: e.toString(),
+          type: MessageType.error,
+          position: PopupPosition.top,
+          duration: const Duration(seconds: 4),
         );
       }
     } finally {
@@ -199,12 +204,13 @@ class _LoginPageState extends State<LoginPage> {
                             alignment: Alignment.centerRight,
                             child: TextButton(
                               onPressed: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      'Forgot password feature coming soon!',
-                                    ),
-                                  ),
+                                MessagePopup.show(
+                                  context,
+                                  message:
+                                      "Forgot pasword features coming soon!",
+                                  type: MessageType.warning,
+                                  position: PopupPosition.top,
+                                  duration: const Duration(seconds: 4),
                                 );
                               },
                               child: const Text(

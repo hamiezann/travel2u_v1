@@ -4,6 +4,7 @@ import 'package:travel2u_v1/core/services/basic_service.dart';
 import 'package:travel2u_v1/core/services/notification_service.dart';
 import 'package:travel2u_v1/presentation/staff/chat_page.dart';
 import 'package:travel2u_v1/presentation/staff/editItinerary.dart';
+import 'package:travel2u_v1/presentation/widgets/custom_message_popup.dart';
 
 class ManageActivityPage extends StatefulWidget {
   const ManageActivityPage({super.key});
@@ -451,55 +452,6 @@ class _ManageActivityPageState extends State<ManageActivityPage> {
                                               ),
                                             ),
 
-                                            // Expanded(
-                                            //   child: ElevatedButton.icon(
-                                            //     onPressed: () {
-                                            //       Navigator.push(
-                                            //         context,
-                                            //         MaterialPageRoute(
-                                            //           builder:
-                                            //               (_) => ChatPage(
-                                            //                 bookingId:
-                                            //                     bookingDoc.id,
-                                            //                 clientName:
-                                            //                     mainUser["name"] ??
-                                            //                     "-",
-                                            //                 customerId:
-                                            //                     customerId,
-                                            //               ),
-                                            //         ),
-                                            //       );
-                                            //     },
-                                            //     icon: const Icon(
-                                            //       Icons.chat_bubble_outline,
-                                            //       size: 18,
-                                            //     ),
-                                            //     label: const Text(
-                                            //       "Chat",
-                                            //       style: TextStyle(
-                                            //         fontWeight: FontWeight.w600,
-                                            //         fontSize: 14,
-                                            //       ),
-                                            //     ),
-                                            //     style: ElevatedButton.styleFrom(
-                                            //       foregroundColor: Colors.teal,
-                                            //       side: const BorderSide(
-                                            //         color: Colors.teal,
-                                            //         width: 1.5,
-                                            //       ),
-                                            //       padding:
-                                            //           const EdgeInsets.symmetric(
-                                            //             vertical: 14,
-                                            //           ),
-                                            //       shape: RoundedRectangleBorder(
-                                            //         borderRadius:
-                                            //             BorderRadius.circular(
-                                            //               16,
-                                            //             ),
-                                            //       ),
-                                            //     ),
-                                            //   ),
-                                            // ),
                                             const SizedBox(width: 8),
 
                                             // EDIT BUTTON
@@ -517,6 +469,8 @@ class _ManageActivityPageState extends State<ManageActivityPage> {
                                                                 data["itineraryId"],
                                                             bookingId:
                                                                 bookingDoc.id,
+                                                            packageId:
+                                                                data["packageId"],
                                                           ),
                                                     ),
                                                   );
@@ -787,21 +741,23 @@ class _ManageActivityPageState extends State<ManageActivityPage> {
 
                     if (context.mounted) {
                       Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Status updated and user notified!"),
-                          backgroundColor: Colors.green,
-                        ),
+                      MessagePopup.show(
+                        context,
+                        message: "Status updated and user notified!",
+                        type: MessageType.success,
+                        position: PopupPosition.top,
+                        duration: const Duration(seconds: 2),
                       );
                     }
                   } catch (e) {
                     if (context.mounted) {
                       Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text("Failed to update status: $e"),
-                          backgroundColor: Colors.red,
-                        ),
+                      MessagePopup.show(
+                        context,
+                        message: "Error updating status: $e",
+                        type: MessageType.error,
+                        position: PopupPosition.top,
+                        duration: const Duration(seconds: 4),
                       );
                     }
                   }

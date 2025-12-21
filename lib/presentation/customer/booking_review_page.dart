@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:travel2u_v1/presentation/widgets/custom_message_popup.dart';
 
 class ReviewPage extends StatefulWidget {
   final String bookingId;
@@ -754,14 +755,12 @@ class _ReviewPageState extends State<ReviewPage> {
   }
 
   void _showToast(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        backgroundColor: Colors.blue[700],
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
-      ),
+    MessagePopup.show(
+      context,
+      message: msg,
+      type: MessageType.info,
+      position: PopupPosition.top,
+      duration: const Duration(seconds: 2),
     );
   }
 }

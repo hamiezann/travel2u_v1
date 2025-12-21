@@ -461,31 +461,4 @@ class BookingPage2State extends State<BookingPage2> {
       ),
     );
   }
-
-  // Widget _saveButton() {
-  //   return Center(
-  //     child: ElevatedButton.icon(
-  //       icon: const Icon(Icons.save),
-  //       label: const Text("Save Details"),
-  //       style: ElevatedButton.styleFrom(
-  //         backgroundColor: Colors.blue,
-  //         foregroundColor: Colors.white,
-  //         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-  //       ),
-  //       onPressed: () async {
-  //         if (!_formKey.currentState!.validate()) return;
-  //         await savePreferencesToFirestore();
-  //         widget.onDataSaved(_bookingData);
-  //         if (mounted) {
-  //           ScaffoldMessenger.of(context).showSnackBar(
-  //             const SnackBar(
-  //               content: Text("User details added successfully!"),
-  //               backgroundColor: Colors.green,
-  //             ),
-  //           );
-  //         }
-  //       },
-  //     ),
-  //   );
-  // }
 }

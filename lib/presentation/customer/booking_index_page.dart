@@ -7,6 +7,7 @@ import 'package:travel2u_v1/core/services/notification_service.dart';
 import 'package:travel2u_v1/presentation/customer/booking_page_1.dart';
 import 'package:travel2u_v1/presentation/customer/booking_page_2.dart';
 import 'package:travel2u_v1/presentation/customer/booking_page_3.dart';
+import 'package:travel2u_v1/presentation/widgets/custom_message_popup.dart';
 import 'package:travel2u_v1/presentation/widgets/custom_step_indicator.dart';
 
 class BookingPage extends StatefulWidget {
@@ -149,11 +150,12 @@ class _BookingPageState extends State<BookingPage> {
 
     if (currentStep == 0 || currentStep == 1) {
       if (!_formKey.currentState!.validate()) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please complete all required fields'),
-            backgroundColor: Colors.orange,
-          ),
+        MessagePopup.show(
+          context,
+          message: "Please complete all required fields",
+          type: MessageType.warning,
+          position: PopupPosition.top,
+          duration: const Duration(seconds: 2),
         );
         return;
       }
@@ -193,6 +195,7 @@ class _BookingPageState extends State<BookingPage> {
       final bookingCollection = FirebaseFirestore.instance.collection(
         'bookings',
       );
+
       final docRef = bookingCollection.doc();
       final bookingData = {
         ..._bookingData,
@@ -217,13 +220,18 @@ class _BookingPageState extends State<BookingPage> {
         'itineraryStatus': result['success'] == true ? 'generated' : 'failed',
         'itineraryGeneratedAt': FieldValue.serverTimestamp(),
       };
-
       if (result['success'] == true && result['itineraryId'] != null) {
         updateData['itineraryId'] = result['itineraryId'];
       } else {
         updateData['itineraryError'] = result['message'] ?? 'Unknown error';
       }
       await docRef.update(updateData);
+      await FirebaseFirestore.instance
+          .collection("users")
+          .doc(userId)
+          .collection("wishlist")
+          .doc(widget.packageId)
+          .delete();
 
       await NotificationService().sendNotification(
         title: "New Booking!",
@@ -238,26 +246,29 @@ class _BookingPageState extends State<BookingPage> {
         _isSubmitting = true;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
+      MessagePopup.show(
+        context,
+        message:
             result['success'] == true
                 ? 'Booking submitted! Itinerary pending approval.'
                 : 'Booking submitted but itinerary generation failed. Staff will verify.',
-          ),
-          backgroundColor:
-              result['success'] == true ? Colors.green : Colors.orange,
-        ),
+        type:
+            result['success'] == true
+                ? MessageType.success
+                : MessageType.warning,
+        position: PopupPosition.top,
+        duration: const Duration(seconds: 2),
       );
 
       Navigator.pop(context);
     } catch (e, st) {
-      debugPrint('Error submitting booking: $e\n$st');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to submit booking: $e'),
-          backgroundColor: Colors.red,
-        ),
+      // debugPrint('Error submitting booking: $e\n$st');
+      MessagePopup.show(
+        context,
+        message: "Failed to submit booking: $e",
+        type: MessageType.error,
+        position: PopupPosition.top,
+        duration: const Duration(seconds: 4),
       );
       setState(() => _isSavingLoading = false);
     }
@@ -405,7 +416,6 @@ class _BookingPageState extends State<BookingPage> {
     );
   }
 
-  // ⬅️ Updated with key injection
   Widget _buildPackageContent() {
     switch (currentStep) {
       case 0:

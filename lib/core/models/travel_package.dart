@@ -11,6 +11,7 @@ class TravelPackage {
   double price;
   String imageUrl;
   String tourGuide;
+  String paxType;
   String flightDetail;
   String flightClass;
   String hotelDetail;
@@ -26,6 +27,7 @@ class TravelPackage {
     required this.destination_lower,
     required this.destination,
     required this.travelDate,
+    required this.paxType,
     required this.duration,
     required this.price,
     required this.imageUrl,
@@ -43,6 +45,7 @@ class TravelPackage {
     return TravelPackage(
       id: json['id'] ?? '',
       name: json['name'] ?? '',
+      paxType: json['paxType'] ?? '',
       destination: json['destination'] ?? '',
       name_lower: json['name_lower'] ?? '',
       destination_lower: json['destination_lower'] ?? '',
@@ -85,6 +88,7 @@ class TravelPackage {
     'name': name,
     'destination': destination,
     'duration': duration,
+    'paxType': paxType,
     'travelDate': travelDate.toIso8601String(),
     'price': price,
     'imageUrl': imageUrl,

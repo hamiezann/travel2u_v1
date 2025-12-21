@@ -25,6 +25,12 @@ class _BookingPage1State extends State<BookingPage1> {
   late TextEditingController paxCtrl;
   final TextEditingController _travelDateController = TextEditingController();
   DateTime? selectedDate;
+  int maxNumTravelers = 1;
+
+  int get safeTravelerCount {
+    final parsed = int.tryParse(paxCtrl.text) ?? 1;
+    return parsed.clamp(1, maxNumTravelers);
+  }
 
   @override
   void initState() {
@@ -53,6 +59,14 @@ class _BookingPage1State extends State<BookingPage1> {
       if (date != null) {
         _travelDateController.text = date;
       }
+    }
+    if (widget.package.paxType == 'Solo') {
+      maxNumTravelers = 1;
+      paxCtrl.text = '1';
+    } else if (widget.package.paxType == 'Group') {
+      maxNumTravelers = 30;
+    } else if (widget.package.paxType == 'Family') {
+      maxNumTravelers = 10;
     }
 
     // _travelDateController.text =
@@ -323,6 +337,7 @@ class _BookingPage1State extends State<BookingPage1> {
               const SizedBox(height: 16),
               TextFormField(
                 // controller: _travelerController,
+                enabled: maxNumTravelers != 1,
                 controller: paxCtrl,
                 decoration: const InputDecoration(
                   labelText: 'Number of Travelers',
@@ -338,8 +353,12 @@ class _BookingPage1State extends State<BookingPage1> {
                   if (parsed == null || parsed <= 0) {
                     return 'Enter a valid number';
                   }
+                  if (parsed > maxNumTravelers) {
+                    return 'Maximum number is $maxNumTravelers';
+                  }
                   return null;
                 },
+                onChanged: (_) => setState(() {}),
                 onSaved: (value) {
                   // final numTravelers = int.tryParse(value ?? '') ?? 1;
                   widget.onDataChanged({
@@ -369,7 +388,8 @@ class _BookingPage1State extends State<BookingPage1> {
                     // valueListenable: _travelerController,
                     valueListenable: paxCtrl,
                     builder: (context, value, _) {
-                      final travelers = int.tryParse(value.text) ?? 1;
+                      // final travelers = int.tryParse(value.text) ?? 1;
+                      final travelers = safeTravelerCount;
                       final total = travelers * pkg.price;
                       return Text(
                         'RM ${total.toStringAsFixed(2)}',
@@ -385,44 +405,6 @@ class _BookingPage1State extends State<BookingPage1> {
               ),
               const SizedBox(height: 10),
 
-              // Row(
-              //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              //   children: [
-              //     const Text(
-              //       'Travel Date:',
-              //       style: TextStyle(
-              //         fontSize: 16,
-              //         color: Color(0xFF687089),
-              //         fontWeight: FontWeight.w600,
-              //       ),
-              //     ),
-              //     TextButton(
-              //       onPressed: () async {
-              //         final now = DateTime.now();
-              //         final picked = await showDatePicker(
-              //           context: context,
-              //           initialDate: selectedDate ?? now,
-              //           firstDate: now,
-              //           lastDate: DateTime(now.year + 2), // allow 2 years ahead
-              //         );
-              //         if (picked != null) {
-              //           setState(() => selectedDate = picked);
-              //         }
-              //       },
-              //       child: Text(
-              //         selectedDate != null
-              //             ? '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}'
-              //             : 'Pick a date',
-              //         style: const TextStyle(
-              //           fontSize: 16,
-              //           color: Color(0xFF0064D2),
-              //           fontWeight: FontWeight.w600,
-              //         ),
-              //       ),
-              //     ),
-              //   ],
-              // ),
-              // const SizedBox(height: 10),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -439,8 +421,7 @@ class _BookingPage1State extends State<BookingPage1> {
                       border: Border.all(color: Colors.grey.shade300),
                     ),
                     child: Text(
-                      _travelDateController
-                          .text, // already formatted dd/MM/yyyy
+                      _travelDateController.text,
                       style: TextStyle(fontSize: 15),
                     ),
                   ),

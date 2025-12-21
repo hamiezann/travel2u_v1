@@ -6,6 +6,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:travel2u_v1/presentation/widgets/custom_card.dart';
+import 'package:travel2u_v1/presentation/widgets/custom_message_popup.dart';
 import 'package:travel2u_v1/presentation/widgets/custom_textfield.dart';
 
 class UserProfile {
@@ -221,8 +222,12 @@ class _ProfilePageState extends State<ProfilePage> {
       }
       bool isUnique = await _checkUniquePhoneNo(_phoneController.text);
       if (!isUnique) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('This phone number is not available.')),
+        MessagePopup.show(
+          context,
+          message: "This phone number is not available.",
+          type: MessageType.warning,
+          position: PopupPosition.top,
+          duration: const Duration(seconds: 2),
         );
         return;
       }
@@ -251,18 +256,21 @@ class _ProfilePageState extends State<ProfilePage> {
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Profile updated successfully!'),
-          backgroundColor: Colors.blue.shade800,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        ),
+      MessagePopup.show(
+        context,
+        message: "Profile updated successfully!",
+        type: MessageType.info,
+        position: PopupPosition.top,
+        duration: const Duration(seconds: 3),
       );
     } catch (e) {
-      ScaffoldMessenger.of(
+      MessagePopup.show(
         context,
-      ).showSnackBar(SnackBar(content: Text('Error saving profile: $e')));
+        message: "Error saving profile: $e",
+        type: MessageType.error,
+        position: PopupPosition.top,
+        duration: const Duration(seconds: 4),
+      );
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -742,11 +750,12 @@ class _ProfilePageState extends State<ProfilePage> {
     setState(() {
       _profileImageUrl = null;
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Profile picture removed'),
-        backgroundColor: Colors.blue.shade900,
-      ),
+    MessagePopup.show(
+      context,
+      message: "Profile picture removed",
+      type: MessageType.info,
+      position: PopupPosition.top,
+      duration: const Duration(seconds: 2),
     );
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:travel2u_v1/presentation/widgets/custom_card.dart';
+import 'package:travel2u_v1/presentation/widgets/custom_message_popup.dart';
 import 'package:travel2u_v1/presentation/widgets/custom_textfield.dart';
 
 class ChangeAuthenticationPage extends StatefulWidget {
@@ -77,22 +78,25 @@ class _ChangeAuthenticationPageState extends State<ChangeAuthenticationPage> {
       // If changing email
       if (_isChangingEmail) {
         await user.verifyBeforeUpdateEmail(newEmail);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Verification email sent to new address.'),
-            backgroundColor: Colors.blue,
-          ),
+        MessagePopup.show(
+          context,
+          message: "Verification email sent to new address.",
+          type: MessageType.info,
+          position: PopupPosition.top,
+          duration: const Duration(seconds: 3),
         );
       }
 
       // If changing password
       if (newPassword.isNotEmpty) {
         await user.updatePassword(newPassword);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Password updated successfully!'),
-            backgroundColor: Colors.green,
-          ),
+
+        MessagePopup.show(
+          context,
+          message: "Password updated successfully!",
+          type: MessageType.success,
+          position: PopupPosition.top,
+          duration: const Duration(seconds: 3),
         );
       }
 
@@ -110,13 +114,21 @@ class _ChangeAuthenticationPageState extends State<ChangeAuthenticationPage> {
       } else if (e.code == 'requires-recent-login') {
         message = 'Please log in again to perform this action.';
       }
-      ScaffoldMessenger.of(
+      MessagePopup.show(
         context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+        message: message,
+        type: MessageType.warning,
+        position: PopupPosition.top,
+        duration: const Duration(seconds: 2),
+      );
     } catch (e) {
-      ScaffoldMessenger.of(
+      MessagePopup.show(
         context,
-      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        message: e.toString(),
+        type: MessageType.error,
+        position: PopupPosition.top,
+        duration: const Duration(seconds: 2),
+      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

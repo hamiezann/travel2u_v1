@@ -456,7 +456,7 @@ class _CDashboardPageState extends State<CDashboardPage> {
                   title: "Login Required",
                   message: "Please log in to access this section.",
                   type: MessageType.warning,
-                  position: PopupPosition.bottom,
+                  position: PopupPosition.top,
                 );
                 return;
               }

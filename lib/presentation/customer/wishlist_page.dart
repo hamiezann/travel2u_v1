@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:travel2u_v1/core/models/travel_package.dart';
 import 'package:travel2u_v1/presentation/customer/package_detail_page.dart';
+import 'package:travel2u_v1/presentation/widgets/custom_message_popup.dart';
 
 class WishlistPage extends StatefulWidget {
   const WishlistPage({super.key});
@@ -184,6 +185,11 @@ class _WishlistPageState extends State<WishlistPage> {
                       child: OutlinedButton(
                         onPressed: () {
                           removeWishlist(data["packageId"]);
+                          MessagePopup.show(
+                            context,
+                            message: "Removed from wishlist",
+                            type: MessageType.success,
+                          );
                         },
                         style: OutlinedButton.styleFrom(
                           side: const BorderSide(

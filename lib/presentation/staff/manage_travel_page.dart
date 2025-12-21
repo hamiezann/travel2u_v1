@@ -4,6 +4,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:travel2u_v1/core/models/travel_package.dart';
 import 'package:travel2u_v1/presentation/customer/package_detail_page.dart';
+import 'package:travel2u_v1/presentation/widgets/custom_message_popup.dart';
 
 class ManageTravelPage extends StatefulWidget {
   const ManageTravelPage({super.key});
@@ -16,7 +17,8 @@ class _ManageTravelPageState extends State<ManageTravelPage> {
   final Map<String, dynamic> travelPackages = {};
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   bool isLoading = true;
-
+  String userId = '';
+  String userRole = 'staff';
   static const _staffColor = Colors.blue;
 
   @override
@@ -28,36 +30,47 @@ class _ManageTravelPageState extends State<ManageTravelPage> {
   Future<void> _fetchTravelPackages() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
-
+    userId = user.uid;
     travelPackages.clear();
     setState(() => isLoading = true);
 
     try {
-      // 🔹 1. Fetch current user role
       final userDoc = await _firestore.collection('users').doc(user.uid).get();
-
-      final role = userDoc.data()?['role'] ?? 'staff';
-
+      userRole = userDoc.data()?['role'] ?? 'staff';
       QuerySnapshot querySnapshot;
-      if (role == 'manager') {
-        querySnapshot = await _firestore.collection('travel_packages').get();
-      } else {
-        querySnapshot =
-            await _firestore
-                .collection('travel_packages')
-                .where('creatorId', isEqualTo: user.uid)
-                .get();
-      }
+      querySnapshot = await _firestore.collection('travel_packages').get();
+      final docs = querySnapshot.docs.toList();
 
-      // 🔹 3. Store packages
-      for (var doc in querySnapshot.docs) {
+      docs.sort((a, b) {
+        final aOwned = a['creatorId'] == userId;
+        final bOwned = b['creatorId'] == userId;
+
+        if (aOwned && !bOwned) return -1;
+        if (!aOwned && bOwned) return 1;
+        return 0; // keep relative order otherwise
+      });
+      // if (role == 'manager') {
+      //   querySnapshot = await _firestore.collection('travel_packages').get();
+      // } else {
+      //   querySnapshot =
+      //       await _firestore
+      //           .collection('travel_packages')
+      //           .where('creatorId', isEqualTo: user.uid)
+      //           .get();
+      // }
+
+      for (var doc in docs) {
         travelPackages[doc.id] = doc.data();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
+        MessagePopup.show(
           context,
-        ).showSnackBar(SnackBar(content: Text('Error fetching packages: $e')));
+          message: "Error fetchin gpackages: $e",
+          type: MessageType.error,
+          position: PopupPosition.top,
+          duration: const Duration(seconds: 4),
+        );
       }
     } finally {
       if (mounted) setState(() => isLoading = false);
@@ -111,20 +124,22 @@ class _ManageTravelPageState extends State<ManageTravelPage> {
           travelPackages.remove(key);
         });
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Package deleted successfully'),
-              backgroundColor: Colors.green,
-            ),
+          MessagePopup.show(
+            context,
+            message: "Package deleted succesfully",
+            type: MessageType.success,
+            position: PopupPosition.top,
+            duration: const Duration(seconds: 2),
           );
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error deleting package: $e'),
-              backgroundColor: Colors.red,
-            ),
+          MessagePopup.show(
+            context,
+            message: "Error deleting package: $e",
+            type: MessageType.error,
+            position: PopupPosition.top,
+            duration: const Duration(seconds: 4),
           );
         }
       }
@@ -209,6 +224,7 @@ class _ManageTravelPageState extends State<ManageTravelPage> {
     final destination = package['destination'] ?? 'No Destination';
     final duration = package['duration'] ?? 'N/A';
     final imageUrl = package['imageUrl'];
+    bool canEdit = package['creatorId'] == userId;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -307,102 +323,39 @@ class _ManageTravelPageState extends State<ManageTravelPage> {
                   ],
                 ),
                 const SizedBox(height: 16),
-
-                // Action Buttons
-                // Row(
-                //   children: [
-                //     Expanded(
-                //       child: OutlinedButton.icon(
-                //         onPressed: () {
-                //           Navigator.pushNamed(
-                //             context,
-                //             '/update-travel-package',
-                //             arguments: {'id': key},
-                //           ).then((_) => _fetchTravelPackages());
-                //         },
-                //         icon: const Icon(Icons.edit_outlined, size: 14),
-                //         label: const Text('Edit'),
-                //         style: OutlinedButton.styleFrom(
-                //           foregroundColor: _staffColor,
-                //           side: BorderSide(color: _staffColor),
-                //           shape: RoundedRectangleBorder(
-                //             borderRadius: BorderRadius.circular(10),
-                //           ),
-                //         ),
-                //       ),
-                //     ),
-                //     const SizedBox(width: 4),
-                //     Expanded(
-                //       child: OutlinedButton.icon(
-                //         onPressed: () {
-                //           Navigator.push(
-                //             context,
-                //             MaterialPageRoute(
-                //               builder:
-                //                   (_) => PackageDetailPage(
-                //                     package: TravelPackage.fromJson(package),
-                //                   ),
-                //             ),
-                //           );
-                //         },
-                //         icon: const Icon(Icons.edit_outlined, size: 14),
-                //         label: const Text('View'),
-                //         style: OutlinedButton.styleFrom(
-                //           foregroundColor: _staffColor,
-                //           side: BorderSide(color: _staffColor),
-                //           shape: RoundedRectangleBorder(
-                //             borderRadius: BorderRadius.circular(10),
-                //           ),
-                //         ),
-                //       ),
-                //     ),
-                //     const SizedBox(width: 4),
-                //     Expanded(
-                //       child: OutlinedButton.icon(
-                //         onPressed: () => _handleDelete(key, packageName),
-                //         icon: const Icon(Icons.delete_outline, size: 14),
-                //         label: const Text('Delete'),
-                //         style: OutlinedButton.styleFrom(
-                //           foregroundColor: Colors.red,
-                //           side: const BorderSide(color: Colors.red),
-                //           shape: RoundedRectangleBorder(
-                //             borderRadius: BorderRadius.circular(10),
-                //           ),
-                //         ),
-                //       ),
-                //     ),
-                //   ],
-                // ),
                 Row(
                   children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.pushNamed(
-                            context,
-                            '/update-travel-package',
-                            arguments: {'id': key},
-                          ).then((_) => _fetchTravelPackages());
-                        },
-                        icon: const Icon(Icons.edit_outlined, size: 18),
-                        label: const Text(
-                          'Edit',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
+                    (canEdit || userRole == 'manager')
+                        ? Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.pushNamed(
+                                context,
+                                '/update-travel-package',
+                                arguments: {'id': key},
+                              ).then((_) => _fetchTravelPackages());
+                            },
+                            icon: const Icon(Icons.edit_outlined, size: 18),
+                            label: const Text(
+                              'Edit',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              foregroundColor: _staffColor,
+                              side: BorderSide(color: _staffColor, width: 1.5),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
                           ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          foregroundColor: _staffColor,
-                          side: BorderSide(color: _staffColor, width: 1.5),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                      ),
-                    ),
+                        )
+                        : Container(),
                     const SizedBox(width: 8),
+
                     Expanded(
                       child: ElevatedButton.icon(
                         onPressed: () {

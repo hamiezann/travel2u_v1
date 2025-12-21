@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:travel2u_v1/core/services/auth_service.dart';
 import 'package:travel2u_v1/presentation/auth/login.dart';
+import 'package:travel2u_v1/presentation/widgets/custom_message_popup.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -32,17 +33,18 @@ class _RegisterPageState extends State<RegisterPage> {
     if (!_formKey.currentState!.validate()) return;
 
     if (passwordController.text != confirmPasswordController.text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Passwords do not match'),
-          backgroundColor: Colors.red,
-        ),
+      MessagePopup.show(
+        context,
+        message: "Passwords do not match",
+        type: MessageType.error,
+        position: PopupPosition.top,
+        duration: const Duration(seconds: 4),
       );
       return;
     }
 
     setState(() => _isLoading = true);
-    bool isActive = true;
+    // bool isActive = true;
     try {
       await _authService.register(
         emailController.text.trim(),
@@ -50,18 +52,23 @@ class _RegisterPageState extends State<RegisterPage> {
         role,
       );
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Registration successful!'),
-            backgroundColor: Colors.green,
-          ),
+        MessagePopup.show(
+          context,
+          message: "Registration successful!",
+          type: MessageType.success,
+          position: PopupPosition.top,
+          duration: const Duration(seconds: 2),
         );
         Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+        MessagePopup.show(
+          context,
+          message: e.toString(),
+          type: MessageType.error,
+          position: PopupPosition.top,
+          duration: const Duration(seconds: 3),
         );
       }
     } finally {
